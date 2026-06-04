@@ -8,8 +8,10 @@ use std::io;
 use pki_types::{DnsName, FipsStatus};
 
 use super::config::{ClientHello, ServerConfig};
+use crate::SideData;
 use crate::common_state::{CommonState, ConnectionOutputs, EarlyDataEvent, Event, Protocol, Side};
 use crate::conn::private::SideOutput;
+use crate::conn::split::SplitConnection;
 use crate::conn::{
     Connection, ConnectionCommon, ConnectionCore, KeyingMaterialExporter, Reader, SendPath, Writer,
 };
@@ -43,6 +45,17 @@ impl ServerConnection {
                 Protocol::Tcp,
             )?),
         })
+    }
+
+    /// Split a post-handshake connection into a [`SplitConnection`].
+    ///
+    /// This fails if:
+    ///
+    /// - the handshake is not complete. Check with [`Connection::is_handshaking()`].
+    /// - there is any buffered application data.  Check with [`Connection::reader()`].
+    /// - there is any buffered TLS data.  Service [`Connection::write_tls()`].
+    pub fn split(self) -> Result<SplitConnection<ServerSide>, Error> {
+        self.inner.split()
     }
 
     /// Retrieves the server name, if any, used to select the certificate and
@@ -577,7 +590,7 @@ impl SideOutput for ServerConnectionData {
 #[derive(Debug)]
 pub struct ServerSide;
 
-impl crate::conn::SideData for ServerSide {}
+impl SideData for ServerSide {}
 
 impl crate::conn::private::Side for ServerSide {
     type Data = ServerConnectionData;

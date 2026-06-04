@@ -221,6 +221,7 @@ impl fmt::Debug for ConnectionOutputs {
             negotiated_kx_group,
             alpn_protocol,
             peer_identity,
+            extended_master_secret,
             exporter: _,
             early_exporter: _,
         } = self;
@@ -231,6 +232,7 @@ impl fmt::Debug for ConnectionOutputs {
             .field("negotiated_kx_group", negotiated_kx_group)
             .field("alpn_protocol", alpn_protocol)
             .field("peer_identity", peer_identity)
+            .field("extended_master_secret", extended_master_secret)
             .finish_non_exhaustive()
     }
 }
