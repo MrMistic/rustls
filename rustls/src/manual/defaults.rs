@@ -47,7 +47,7 @@ by default out of conservatism.
       now and attacked later.
 
 [X25519MLKEM768]: <https://datatracker.ietf.org/doc/draft-ietf-tls-ecdhe-mlkem/>
-[FIPS203]: <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf>
+[FIPS203]: <https://nvls.nist.gov/nists/FIPS/NIST.FIPS.203.pdf>
 [Chrome]: <https://security.googleblog.com/2024/09/a-new-path-for-kyber-on-web.html>
 [Cloudflare]: <https://blog.cloudflare.com/pq-2024/#ml-kem-768-and-x25519>
 [interop-bug]: <https://github.com/rustls/rustls/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=>

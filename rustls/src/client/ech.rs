@@ -49,7 +49,7 @@ pub enum EchMode {
 
 impl EchMode {
     /// Returns true if the ECH mode will use a FIPS approved HPKE suite.
-    pub fn fips(&self) -> FipsStatus {
+    pub(super) fn fips(&self) -> FipsStatus {
         match self {
             Self::Enable(ech_config) => ech_config.suite.fips(),
             Self::Grease(grease_config) => grease_config.suite.fips(),
@@ -75,11 +75,11 @@ impl From<EchGreaseConfig> for EchMode {
 #[derive(Clone, Debug)]
 pub struct EchConfig {
     /// The selected EchConfig.
-    pub(crate) config: EchConfigPayload,
+    config: EchConfigPayload,
 
     /// An HPKE instance corresponding to a suite from the `config` we have selected as
     /// a compatible choice.
-    pub(crate) suite: &'static dyn Hpke,
+    suite: &'static dyn Hpke,
 }
 
 impl EchConfig {
@@ -113,10 +113,7 @@ impl EchConfig {
     ///
     /// Returns an error if the server provided no retry configurations in `RejectedEch`, or if
     /// none of the retry configurations are compatible with the supported `hpke_suites`.
-    pub fn for_retry(
-        rejection: RejectedEch,
-        hpke_suites: &[&'static dyn Hpke],
-    ) -> Result<Self, Error> {
+    fn for_retry(rejection: RejectedEch, hpke_suites: &[&'static dyn Hpke]) -> Result<Self, Error> {
         let Some(configs) = rejection.retry_configs else {
             return Err(EncryptedClientHelloError::NoCompatibleConfig.into());
         };
@@ -146,7 +143,7 @@ impl EchConfig {
     /// Compute the HPKE `SetupBaseS` `info` parameter for this ECH configuration.
     ///
     /// See <https://datatracker.ietf.org/doc/html/rfc9849#section-6.1>.
-    pub(crate) fn hpke_info(&self) -> Vec<u8> {
+    fn hpke_info(&self) -> Vec<u8> {
         let mut info = Vec::with_capacity(128);
         // "tls ech" || 0x00 || ECHConfig
         info.extend_from_slice(b"tls ech\0");
@@ -187,7 +184,7 @@ impl EchConfig {
                     .find(|hpke| hpke.suite() == suite)
                 {
                     debug!(
-                        "selected ECH config ID {:?} suite {:?} public_name {:?}",
+                        "selected ECH config ID {:?} suite {:?} lic_name {:?}",
                         key_config.config_id, suite, contents.public_name
                     );
                     return Ok(Self {
@@ -205,8 +202,8 @@ impl EchConfig {
 /// Configuration for GREASE Encrypted Client Hello.
 #[derive(Clone, Debug)]
 pub struct EchGreaseConfig {
-    pub(crate) suite: &'static dyn Hpke,
-    pub(crate) placeholder_key: HpkePublicKey,
+    suite: &'static dyn Hpke,
+    placeholder_key: HpkePublicKey,
 }
 
 impl EchGreaseConfig {
@@ -230,7 +227,7 @@ impl EchGreaseConfig {
     ///
     /// See <https://datatracker.ietf.org/doc/html/rfc9849#name-grease-ech> for
     /// more information.
-    pub(crate) fn grease_ext(
+    pub(super) fn grease_ext(
         &self,
         secure_random: &'static dyn SecureRandom,
         protocol: Protocol,
@@ -313,18 +310,18 @@ pub enum EchStatus {
 }
 
 /// Contextual data for a TLS client handshake that has offered encrypted client hello (ECH).
-pub(crate) struct EchState {
+pub(super) struct EchState {
     // The public DNS name from the ECH configuration we've chosen - this is included as the SNI
     // value for the "outer" client hello. It can only be a DnsName, not an IP address.
-    pub(crate) outer_name: DnsName<'static>,
+    pub(super) outer_name: DnsName<'static>,
     // If we're resuming in the inner hello, this is the early key schedule to use for encrypting
     // early data if the ECH offer is accepted.
-    pub(crate) early_data_key_schedule: Option<KeyScheduleEarlyClient>,
+    pub(super) early_data_key_schedule: Option<KeyScheduleEarlyClient>,
     // A random value we use for the inner hello.
-    pub(crate) inner_hello_random: Random,
+    pub(super) inner_hello_random: Random,
     // A transcript buffer maintained for the inner hello. Once ECH is confirmed we switch to
     // using this transcript for the handshake.
-    pub(crate) inner_hello_transcript: HandshakeHashBuffer,
+    pub(super) inner_hello_transcript: HandshakeHashBuffer,
     // A source of secure random data.
     secure_random: &'static dyn SecureRandom,
     // The top level protocol
@@ -351,7 +348,7 @@ pub(crate) struct EchState {
 }
 
 impl EchState {
-    pub(crate) fn new(
+    fn new(
         config: &EchConfig,
         inner_name: ServerName<'static>,
         protocol: Protocol,
@@ -405,7 +402,7 @@ impl EchState {
     /// If `retry_req` is `Some`, then the outer hello will be constructed for a hello retry request.
     ///
     /// If `resuming` is `Some`, then the inner hello will be constructed for a resumption handshake.
-    pub(crate) fn ech_hello(
+    pub(super) fn ech_hello(
         &mut self,
         mut outer_hello: ClientHelloPayload,
         retry_req: Option<&HelloRetryRequest>,
@@ -470,7 +467,7 @@ impl EchState {
     }
 
     /// Confirm whether an ECH offer was accepted based on examining the server hello.
-    pub(crate) fn confirm_acceptance(
+    pub(super) fn confirm_acceptance(
         self,
         ks: &KeyScheduleHandshakeStart,
         server_hello: &ServerHelloPayload,
@@ -517,7 +514,7 @@ impl EchState {
         }
     }
 
-    pub(crate) fn confirm_hrr_acceptance(
+    pub(super) fn confirm_hrr_acceptance(
         &self,
         hrr: &HelloRetryRequest,
         cs: &Tls13CipherSuite,
@@ -564,7 +561,7 @@ impl EchState {
     ///
     /// This will start the in-progress transcript using the given `hash`, convert it into an HRR
     /// buffer, and then add the hello retry message `m`.
-    pub(crate) fn transcript_hrr_update(
+    pub(super) fn transcript_hrr_update(
         &mut self,
         hash: &'static dyn Hash,
         m: &Message<'_>,
@@ -840,10 +837,10 @@ const SERVER_HELLO_ECH_CONFIRMATION_SPAN: core::ops::Range<usize> =
 /// Returned from EchState::confirm_acceptance when the server has accepted the ECH offer.
 ///
 /// Holds the state required to continue the handshake with the inner hello from the ECH offer.
-pub(crate) struct EchAccepted {
-    pub(crate) transcript: HandshakeHash,
-    pub(crate) random: Random,
-    pub(crate) sent_extensions: Vec<ExtensionType>,
+pub(super) struct EchAccepted {
+    pub(super) transcript: HandshakeHash,
+    pub(super) random: Random,
+    pub(super) sent_extensions: Vec<ExtensionType>,
 }
 
 #[cfg(test)]
@@ -961,7 +958,7 @@ mod tests {
                     symmetric_cipher_suites: vec![],
                 },
                 maximum_name_length: 255,
-                public_name: DnsName::try_from("public").unwrap(),
+                public_name: DnsName::try_from("lic").unwrap(),
                 extensions: vec![],
             }),
             suite: &MockHpke,

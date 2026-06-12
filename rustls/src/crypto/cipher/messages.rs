@@ -21,7 +21,7 @@ pub struct EncodedMessage<P> {
 
 impl<P> EncodedMessage<P> {
     /// Create a new `EncodedMessage` with the given fields.
-    pub fn new(typ: ContentType, version: ProtocolVersion, payload: P) -> Self {
+    pub(super) fn new(typ: ContentType, version: ProtocolVersion, payload: P) -> Self {
         Self {
             typ,
             version,
@@ -50,7 +50,7 @@ impl<'a> EncodedMessage<Payload<'a>> {
     }
 
     /// Convert into an unencrypted [`EncodedMessage<OutboundOpaque>`] (without decrypting).
-    pub fn into_unencrypted_opaque(self) -> EncodedMessage<OutboundOpaque> {
+    pub(crate) fn into_unencrypted_opaque(self) -> EncodedMessage<OutboundOpaque> {
         EncodedMessage {
             typ: self.typ,
             version: self.version,
@@ -68,7 +68,7 @@ impl<'a> EncodedMessage<Payload<'a>> {
     }
 
     /// Convert into an owned `EncodedMessage<Plain<'static>>`.
-    pub fn into_owned(self) -> Self {
+    pub(crate) fn into_owned(self) -> Self {
         Self {
             typ: self.typ,
             version: self.version,
@@ -155,7 +155,7 @@ impl EncodedMessage<OutboundPlain<'_>> {
     }
 
     #[expect(dead_code)]
-    pub(crate) fn encoded_len(&self, record_layer: &EncryptionState) -> usize {
+    fn encoded_len(&self, record_layer: &EncryptionState) -> usize {
         HEADER_SIZE + record_layer.encrypted_len(self.payload.len())
     }
 }
@@ -197,7 +197,7 @@ pub enum OutboundPlain<'a> {
 impl<'a> OutboundPlain<'a> {
     /// Create a payload from a slice of byte slices.
     /// If fragmented the cursors are added by default: start = 0, end = length
-    pub fn new(chunks: &'a [&'a [u8]]) -> Self {
+    pub(crate) fn new(chunks: &'a [&'a [u8]]) -> Self {
         if chunks.len() == 1 {
             Self::Single(chunks[0])
         } else {
@@ -213,19 +213,19 @@ impl<'a> OutboundPlain<'a> {
     }
 
     /// Create a payload with a single empty slice
-    pub fn new_empty() -> Self {
+    fn new_empty() -> Self {
         Self::Single(&[])
     }
 
     /// Flatten the slice of byte slices to an owned vector of bytes
-    pub fn to_vec(&self) -> Vec<u8> {
+    pub(crate) fn to_vec(&self) -> Vec<u8> {
         let mut vec = Vec::with_capacity(self.len());
         self.copy_to_vec(&mut vec);
         vec
     }
 
     /// Append all bytes to a vector
-    pub fn copy_to_vec(&self, vec: &mut Vec<u8>) {
+    fn copy_to_vec(&self, vec: &mut Vec<u8>) {
         match *self {
             Self::Single(chunk) => vec.extend_from_slice(chunk),
             Self::Multiple { chunks, start, end } => {
@@ -322,7 +322,7 @@ impl OutboundOpaque {
     }
 
     /// Truncate the payload to the given length (plus header).
-    pub fn truncate(&mut self, len: usize) {
+    fn truncate(&mut self, len: usize) {
         self.0.truncate(len + HEADER_SIZE)
     }
 
@@ -380,7 +380,7 @@ pub enum Payload<'a> {
 
 impl<'a> Payload<'a> {
     /// A reference to the payload's bytes
-    pub fn bytes(&'a self) -> &'a [u8] {
+    pub(crate) fn bytes(&'a self) -> &'a [u8] {
         match self {
             Self::Borrowed(bytes) => bytes,
             Self::Owned(bytes) => bytes,
@@ -442,11 +442,11 @@ impl<'a> InboundOpaque<'a> {
             .0;
     }
 
-    pub(crate) fn into_inner(self) -> &'a mut [u8] {
+    fn into_inner(self) -> &'a mut [u8] {
         self.0
     }
 
-    pub(crate) fn pop(&mut self) -> Option<u8> {
+    fn pop(&mut self) -> Option<u8> {
         if self.is_empty() {
             return None;
         }

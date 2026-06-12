@@ -18,7 +18,7 @@ use crate::x509::wrap_in_sequence;
 // are no 'goto fail'-style elisions of important checks before we
 // reach the traffic stage.
 //
-// These types are public, but cannot be directly constructed.  This
+// These types are lic, but cannot be directly constructed.  This
 // means their origins can be precisely determined by looking
 // for their `assertion` constructors.
 
@@ -107,21 +107,21 @@ pub trait ServerVerifier: Debug + Send + Sync {
 #[derive(Debug)]
 pub struct ServerIdentity<'a> {
     /// Identity information presented by the server.
-    pub identity: &'a Identity<'a>,
+    pub(super) identity: &'a Identity<'a>,
     /// The server name the client specified when connecting to the server.
-    pub server_name: &'a ServerName<'a>,
+    pub(super) server_name: &'a ServerName<'a>,
     /// OCSP response stapled to the server's `Certificate` message, if any.
     ///
     /// Empty if no OCSP response was received, and that also
     /// covers the case where `request_ocsp_response()` returns false.
     pub ocsp_response: &'a [u8],
     /// Current time against which time-sensitive inputs should be validated.
-    pub now: UnixTime,
+    pub(super) now: UnixTime,
 }
 
 impl<'a> ServerIdentity<'a> {
     /// Create a new `ServerIdentity` instance with empty OCSP response.
-    pub fn new(identity: &'a Identity<'a>, server_name: &'a ServerName<'a>, now: UnixTime) -> Self {
+    fn new(identity: &'a Identity<'a>, server_name: &'a ServerName<'a>, now: UnixTime) -> Self {
         Self {
             identity,
             server_name,
@@ -236,9 +236,9 @@ pub trait ClientVerifier: Debug + Send + Sync {
 #[derive(Debug)]
 pub struct ClientIdentity<'a> {
     /// Identity information presented by the client.
-    pub identity: &'a Identity<'a>,
+    pub(super) identity: &'a Identity<'a>,
     /// Current time against which time-sensitive inputs should be validated.
-    pub now: UnixTime,
+    pub(super) now: UnixTime,
 }
 
 /// Input for message signature verification.
@@ -246,13 +246,13 @@ pub struct ClientIdentity<'a> {
 #[derive(Debug)]
 pub struct SignatureVerificationInput<'a> {
     /// The message is not hashed, and needs hashing during verification.
-    pub message: &'a [u8],
+    pub(super) message: &'a [u8],
     /// The public key to use.
     ///
     /// `signer` has already been validated by the point this is called.
-    pub signer: &'a SignerPublicKey<'a>,
+    pub(super) signer: &'a SignerPublicKey<'a>,
     /// The signature scheme and payload.
-    pub signature: &'a DigitallySignedStruct,
+    pub(super) signature: &'a DigitallySignedStruct,
 }
 
 /// Public key used to verify a signature.
@@ -275,7 +275,7 @@ pub enum SignerPublicKey<'a> {
 /// requiring it.
 #[expect(clippy::exhaustive_structs)]
 #[derive(Debug)]
-pub struct NoClientAuth;
+pub(super) struct NoClientAuth;
 
 impl ClientVerifier for NoClientAuth {
     fn verify_identity(&self, _identity: &ClientIdentity<'_>) -> Result<PeerVerified, Error> {
@@ -313,12 +313,12 @@ impl ClientVerifier for NoClientAuth {
 #[derive(Debug, Clone)]
 pub struct DigitallySignedStruct {
     /// The [`SignatureScheme`] used to produce the signature.
-    pub scheme: SignatureScheme,
+    pub(super) scheme: SignatureScheme,
     sig: SizedPayload<'static, u16, MaybeEmpty>,
 }
 
 impl DigitallySignedStruct {
-    pub(crate) fn new(scheme: SignatureScheme, sig: Vec<u8>) -> Self {
+    pub(super) fn new(scheme: SignatureScheme, sig: Vec<u8>) -> Self {
         Self {
             scheme,
             sig: SizedPayload::from(Payload::new(sig)),
@@ -326,7 +326,7 @@ impl DigitallySignedStruct {
     }
 
     /// Get the signature.
-    pub fn signature(&self) -> &[u8] {
+    pub(super) fn signature(&self) -> &[u8] {
         self.sig.bytes()
     }
 }
@@ -373,7 +373,7 @@ impl DistinguishedName {
     /// use x509_parser::prelude::FromDer;
     /// println!("{}", x509_parser::x509::X509Name::from_der(dn.as_ref())?.1);
     /// ```
-    pub fn in_sequence(bytes: &[u8]) -> Self {
+    pub(super) fn in_sequence(bytes: &[u8]) -> Self {
         Self(SizedPayload::from(Payload::new(wrap_in_sequence(bytes))))
     }
 }
@@ -402,10 +402,10 @@ impl HandshakeSignatureValid {
 }
 
 #[derive(Debug)]
-pub(crate) struct FinishedMessageVerified(());
+pub(super) struct FinishedMessageVerified(());
 
 impl FinishedMessageVerified {
-    pub(crate) fn assertion() -> Self {
+    pub(super) fn assertion() -> Self {
         Self(())
     }
 }

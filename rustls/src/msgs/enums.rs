@@ -4,7 +4,7 @@
 enum_builder! {
     /// The `ClientCertificateType` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub(crate) struct ClientCertificateType(pub u8);
+    pub(crate) struct ClientCertificateType( u8);
 
     enum ClientCertificateTypeName {
         RSASign => 0x01,
@@ -15,9 +15,9 @@ enum_builder! {
 enum_builder! {
     /// The `Compression` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub(crate) struct Compression(pub(crate) u8);
+    pub(crate) struct Compression( u8);
 
-    pub(crate) enum CompressionName {
+     enum CompressionName {
         Null => 0x00,
     }
 }
@@ -25,7 +25,7 @@ enum_builder! {
 enum_builder! {
     /// The `AlertLevel` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct AlertLevel(pub u8);
+    pub(crate)  struct AlertLevel(pub(crate)  u8);
 
     pub(crate) enum AlertLevelName {
         Warning => 0x01,
@@ -36,7 +36,7 @@ enum_builder! {
 enum_builder! {
     /// The `ExtensionType` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct ExtensionType(pub u16);
+    pub(crate)  struct ExtensionType(pub(super)  u16);
 
     enum ExtensionTypeName {
         ServerName => 0x0000,
@@ -114,7 +114,7 @@ impl ExtensionType {
 enum_builder! {
     /// The `ServerNameType` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub(crate) struct ServerNameType(pub u8);
+    pub(super)  struct ServerNameType( u8);
 
     enum ServerNameTypeName {
         HostName => 0x00,
@@ -124,7 +124,7 @@ enum_builder! {
 enum_builder! {
     /// The `ECPointFormat` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct ECPointFormat(pub u8);
+    pub(super)  struct ECPointFormat( u8);
 
     enum ECPointFormatName {
         Uncompressed => 0x00,
@@ -134,7 +134,7 @@ enum_builder! {
 enum_builder! {
     /// The `ECCurveType` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub(crate) struct ECCurveType(pub(crate) u8);
+    pub(crate) struct ECCurveType( u8);
 
     enum ECCurveTypeName {
         NamedCurve => 0x03,
@@ -144,7 +144,7 @@ enum_builder! {
 enum_builder! {
     /// The `PskKeyExchangeMode` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct PskKeyExchangeMode(pub u8);
+    pub(super)  struct PskKeyExchangeMode( u8);
 
     enum PskKeyExchangeModeName {
         PSK_KE => 0x00,
@@ -155,7 +155,7 @@ enum_builder! {
 enum_builder! {
     /// The `KeyUpdateRequest` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct KeyUpdateRequest(pub u8);
+    pub(crate)  struct KeyUpdateRequest( u8);
 
      enum KeyUpdateRequestName {
         UpdateNotRequested => 0x00,
@@ -166,7 +166,7 @@ enum_builder! {
 enum_builder! {
     /// The `CertificateStatusType` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct CertificateStatusType(pub u8);
+    pub(super)  struct CertificateStatusType( u8);
 
     enum CertificateStatusTypeName {
         OCSP => 0x01,
@@ -179,7 +179,7 @@ enum_builder! {
     /// Specified in [RFC 9849 Section 4].
     ///
     /// [RFC 9849 Section 4]: <https://datatracker.ietf.org/doc/html/rfc9849#section-4>
-    pub struct EchVersion(pub u16);
+    pub(crate)  struct EchVersion(pub(super)  u16);
 
     enum EchVersionName {
         V18 => 0xfe0d,
@@ -187,7 +187,7 @@ enum_builder! {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+pub(super) mod tests {
     // These tests are intended to provide coverage and
     // check panic-safety of relatively unused values.
 

@@ -47,14 +47,14 @@ pub mod tls13;
 pub mod hpke;
 
 #[cfg(any(doc, test))]
-pub(crate) mod test_provider;
+pub(super) mod test_provider;
 #[cfg(test)]
-pub(crate) use test_provider::TEST_PROVIDER;
+pub(super) use test_provider::TEST_PROVIDER;
 #[cfg(doc)]
 #[doc(hidden)]
-pub use test_provider::TEST_PROVIDER;
+use test_provider::TEST_PROVIDER;
 #[cfg(all(test, any(target_arch = "aarch64", target_arch = "x86_64")))]
-pub(crate) use test_provider::TLS13_TEST_SUITE;
+pub(super) use test_provider::TLS13_TEST_SUITE;
 
 // Message signing interfaces.
 mod signer;
@@ -119,9 +119,9 @@ pub use crate::suites::CipherSuiteCommon;
 ///
 /// ```
 /// # use std::sync::Arc;
-/// # mod fictitious_hsm_api { pub fn load_private_key(key_der: pki_types::PrivateKeyDer<'static>) -> ! { unreachable!(); } }
+/// # mod fictitious_hsm_api {  fn load_private_key(key_der: pki_types::PrivateKeyDer<'static>) -> ! { unreachable!(); } }
 ///
-/// pub fn provider() -> rustls::crypto::CryptoProvider {
+///  fn provider() -> rustls::crypto::CryptoProvider {
 /// # let DEFAULT_PROVIDER = panic!();
 ///   rustls::crypto::CryptoProvider {
 ///     key_provider: &HsmKeyLoader,
@@ -235,7 +235,7 @@ impl CryptoProvider {
     /// also TLS protocol-level recommendations made by NIST.  You should
     /// prefer to call [`ClientConfig::fips()`] or [`ServerConfig::fips()`]
     /// which take these into account.
-    pub fn fips(&self) -> FipsStatus {
+    pub(super) fn fips(&self) -> FipsStatus {
         let Self {
             tls12_cipher_suites,
             tls13_cipher_suites,
@@ -265,7 +265,7 @@ impl CryptoProvider {
         status
     }
 
-    pub(crate) fn consistency_check(&self) -> Result<(), Error> {
+    pub(super) fn consistency_check(&self) -> Result<(), Error> {
         if self.tls12_cipher_suites.is_empty() && self.tls13_cipher_suites.is_empty() {
             return Err(ApiMisuse::NoCipherSuitesConfigured.into());
         }
@@ -314,7 +314,7 @@ impl CryptoProvider {
         Ok(())
     }
 
-    pub(crate) fn iter_cipher_suites(&self) -> impl Iterator<Item = SupportedCipherSuite> + '_ {
+    pub(super) fn iter_cipher_suites(&self) -> impl Iterator<Item = SupportedCipherSuite> + '_ {
         self.tls13_cipher_suites
             .iter()
             .copied()
@@ -329,7 +329,7 @@ impl CryptoProvider {
 
     /// We support a given TLS version if at least one ciphersuite for the version
     /// is available.
-    pub(crate) fn supports_version(&self, v: ProtocolVersion) -> bool {
+    pub(super) fn supports_version(&self, v: ProtocolVersion) -> bool {
         match v {
             ProtocolVersion::TLSv1_2 => !self.tls12_cipher_suites.is_empty(),
             ProtocolVersion::TLSv1_3 => !self.tls13_cipher_suites.is_empty(),
@@ -337,7 +337,7 @@ impl CryptoProvider {
         }
     }
 
-    pub(crate) fn find_kx_group(
+    pub(super) fn find_kx_group(
         &self,
         name: NamedGroup,
         version: ProtocolVersion,
@@ -376,7 +376,7 @@ pub struct WebPkiSupportedAlgorithms {
     ///
     /// The order of this list is not significant.  It may be empty, but the default
     /// certificate verifier will reject all certificates so a custom verifier will be required.
-    pub(crate) all: &'static [&'static dyn SignatureVerificationAlgorithm],
+    pub(super) all: &'static [&'static dyn SignatureVerificationAlgorithm],
 
     /// A mapping from TLS `SignatureScheme`s to matching webpki signature verification algorithms.
     ///
@@ -394,7 +394,7 @@ pub struct WebPkiSupportedAlgorithms {
     ///
     /// The supported schemes in this mapping is communicated to the peer and the order is significant.
     /// The first mapping is our highest preference.
-    pub(crate) mapping: &'static [(
+    pub(super) mapping: &'static [(
         SignatureScheme,
         &'static [&'static dyn SignatureVerificationAlgorithm],
     )],
@@ -439,7 +439,7 @@ impl WebPkiSupportedAlgorithms {
     }
 
     /// Return the FIPS validation status of this implementation.
-    pub fn fips(&self) -> FipsStatus {
+    fn fips(&self) -> FipsStatus {
         let algs = self
             .all
             .iter()
@@ -459,7 +459,7 @@ impl WebPkiSupportedAlgorithms {
     }
 
     /// Accessor for the `mapping` field.
-    pub fn mapping(
+    fn mapping(
         &self,
     ) -> &'static [(
         SignatureScheme,
@@ -470,7 +470,7 @@ impl WebPkiSupportedAlgorithms {
 
     /// Return the first item in `mapping` that matches `scheme`.
     #[cfg(feature = "webpki")]
-    pub(crate) fn convert_scheme(
+    pub(super) fn convert_scheme(
         &self,
         scheme: SignatureScheme,
     ) -> Result<&[&'static dyn SignatureVerificationAlgorithm], Error> {
@@ -516,7 +516,7 @@ impl Hash for WebPkiSupportedAlgorithms {
     }
 }
 
-pub(crate) mod rand {
+pub(super) mod rand {
     use super::{GetRandomFailed, SecureRandom};
 
     /// Make an array of size `N` containing random material.
@@ -642,13 +642,13 @@ mod static_default {
     use super::CryptoProvider;
     use crate::sync::Arc;
 
-    pub(crate) fn install_default(
+    pub(super) fn install_default(
         default_provider: CryptoProvider,
     ) -> Result<(), Arc<CryptoProvider>> {
         PROCESS_DEFAULT_PROVIDER.set(Arc::new(default_provider))
     }
 
-    pub(crate) fn get_default() -> Option<&'static Arc<CryptoProvider>> {
+    pub(super) fn get_default() -> Option<&'static Arc<CryptoProvider>> {
         PROCESS_DEFAULT_PROVIDER.get()
     }
 
@@ -657,7 +657,7 @@ mod static_default {
 
 #[cfg(test)]
 #[track_caller]
-pub(crate) fn tls13_suite(
+pub(super) fn tls13_suite(
     suite: CipherSuite,
     provider: &CryptoProvider,
 ) -> &'static Tls13CipherSuite {
@@ -670,7 +670,7 @@ pub(crate) fn tls13_suite(
 
 #[cfg(test)]
 #[track_caller]
-pub(crate) fn tls12_suite(
+pub(super) fn tls12_suite(
     suite: CipherSuite,
     provider: &CryptoProvider,
 ) -> &'static Tls12CipherSuite {
@@ -683,7 +683,7 @@ pub(crate) fn tls12_suite(
 
 #[cfg(test)]
 #[track_caller]
-pub(crate) fn tls13_only(provider: CryptoProvider) -> CryptoProvider {
+pub(super) fn tls13_only(provider: CryptoProvider) -> CryptoProvider {
     CryptoProvider {
         tls12_cipher_suites: Cow::default(),
         ..provider
@@ -692,7 +692,7 @@ pub(crate) fn tls13_only(provider: CryptoProvider) -> CryptoProvider {
 
 #[cfg(test)]
 #[track_caller]
-pub(crate) fn tls12_only(provider: CryptoProvider) -> CryptoProvider {
+pub(super) fn tls12_only(provider: CryptoProvider) -> CryptoProvider {
     CryptoProvider {
         tls13_cipher_suites: Cow::default(),
         ..provider

@@ -86,7 +86,7 @@ impl SupportedKxGroup for Hybrid {
         // [SP 800-56A] or [SP 800-56B])"
         //
         // NIST plan to adjust this and allow both orders: see
-        // <https://csrc.nist.gov/pubs/sp/800/227/ipd> (Jan 2025) lines 1070-1080.
+        // <https://csrc.nist.gov/s/sp/800/227/ipd> (Jan 2025) lines 1070-1080.
         //
         // But, for now, we follow the SP800-56C logic: the element appearing first is the
         // one that controls approval.
@@ -241,7 +241,7 @@ pub trait SupportedKxGroup: Send + Sync + Debug {
     /// The default implementation for this calls `start()` and then calls
     /// `complete()` on the result.  This is suitable for Diffie-Hellman-like
     /// key exchange algorithms, where there is not a data dependency between
-    /// our key share (named "pub_key" in this API) and the peer's (`peer_pub_key`).
+    /// our key share (named "_key" in this API) and the peer's (`peer__key`).
     ///
     /// If there is such a data dependency (like key encapsulation mechanisms), this
     /// function should be implemented.
@@ -292,7 +292,7 @@ impl StartedKeyExchange {
     ///
     /// This removes the ability to do the hybrid key exchange optimization,
     /// but still allows the key exchange as a whole to be completed.
-    pub fn into_single(self) -> Box<dyn ActiveKeyExchange> {
+    pub(crate) fn into_single(self) -> Box<dyn ActiveKeyExchange> {
         match self {
             Self::Single(s) => s,
             Self::Hybrid(h) => h.into_key_exchange(),
@@ -348,7 +348,7 @@ impl Deref for StartedKeyExchange {
 pub trait ActiveKeyExchange: Send + Sync {
     /// Completes the key exchange, given the peer's public key.
     ///
-    /// This method must return an error if `peer_pub_key` is invalid: either
+    /// This method must return an error if `peer__key` is invalid: either
     /// misencoded, or an invalid public key (such as, but not limited to, being
     /// in a small order subgroup).
     ///
@@ -378,7 +378,7 @@ pub trait ActiveKeyExchange: Send + Sync {
     /// are encouraged to just implement [`complete()`](Self::complete) assuming TLS 1.3, and let the default
     /// implementation of this method handle TLS 1.2-specific requirements.
     ///
-    /// This method must return an error if `peer_pub_key` is invalid: either
+    /// This method must return an error if `peer__key` is invalid: either
     /// misencoded, or an invalid public key (such as, but not limited to, being
     /// in a small order subgroup).
     ///
@@ -492,7 +492,7 @@ pub trait HybridKeyExchange: ActiveKeyExchange {
 
     /// Completes the classical component of the key exchange, given the peer's public key.
     ///
-    /// This method must return an error if `peer_pub_key` is invalid: either
+    /// This method must return an error if `peer__key` is invalid: either
     /// misencoded, or an invalid public key (such as, but not limited to, being
     /// in a small order subgroup).
     ///
@@ -530,7 +530,7 @@ enum_builder! {
     /// by a peer during a TLS handshake. It is **not** a list of groups that
     /// Rustls supports. The supported groups are determined via the
     /// [`CryptoProvider`][crate::crypto::CryptoProvider] interface.
-    pub struct NamedGroup(pub u16);
+    pub struct NamedGroup(pub(crate)  u16);
 
     enum NamedGroupName {
         secp256r1 => 0x0017,
@@ -568,7 +568,7 @@ enum_builder! {
 
 impl NamedGroup {
     /// Return the key exchange algorithm associated with this `NamedGroup`
-    pub fn key_exchange_algorithm(self) -> KeyExchangeAlgorithm {
+    pub(crate) fn key_exchange_algorithm(self) -> KeyExchangeAlgorithm {
         match u16::from(self) {
             x if (0x100..0x200).contains(&x) => KeyExchangeAlgorithm::DHE,
             _ => KeyExchangeAlgorithm::ECDHE,

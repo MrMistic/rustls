@@ -9,7 +9,7 @@ use crate::tls13::Tls13CipherSuite;
 /// and [`TLS13`].
 #[non_exhaustive]
 #[derive(Debug)]
-pub enum SupportedProtocolVersion {
+pub(super) enum SupportedProtocolVersion {
     /// The TLS1.2 protocol version.
     TLS12(&'static Tls12Version),
     /// The TLS1.3 protocol version.
@@ -18,7 +18,7 @@ pub enum SupportedProtocolVersion {
 
 impl SupportedProtocolVersion {
     /// The TLS enumeration naming this version.
-    pub const fn version(&self) -> ProtocolVersion {
+    const fn version(&self) -> ProtocolVersion {
         match self {
             Self::TLS12(_) => ProtocolVersion::TLSv1_2,
             Self::TLS13(_) => ProtocolVersion::TLSv1_3,
@@ -44,14 +44,14 @@ pub static TLS12: SupportedProtocolVersion = SupportedProtocolVersion::TLS12(TLS
 pub static TLS13: SupportedProtocolVersion = SupportedProtocolVersion::TLS13(TLS13_VERSION);
 
 /// A list of all the protocol versions supported by rustls.
-pub static ALL_VERSIONS: &[&SupportedProtocolVersion] = &[&TLS13, &TLS12];
+pub(super) static ALL_VERSIONS: &[&SupportedProtocolVersion] = &[&TLS13, &TLS12];
 
 /// The version configuration that an application should use by default.
 ///
 /// This will be [`ALL_VERSIONS`] for now, but gives space in the future
 /// to remove a version from here and require users to opt-in to older
 /// versions.
-pub static DEFAULT_VERSIONS: &[&SupportedProtocolVersion] = ALL_VERSIONS;
+pub(super) static DEFAULT_VERSIONS: &[&SupportedProtocolVersion] = ALL_VERSIONS;
 
 /// Internal data for handling the TLS1.2 protocol.
 ///
@@ -79,8 +79,8 @@ pub static TLS13_VERSION: &Tls13Version = &Tls13Version {
 #[non_exhaustive]
 #[derive(Debug)]
 pub struct Tls12Version {
-    pub(crate) client: &'static dyn crate::client::ClientHandler<Tls12CipherSuite>,
-    pub(crate) server: &'static dyn crate::server::ServerHandler<Tls12CipherSuite>,
+    pub(super) client: &'static dyn crate::client::ClientHandler<Tls12CipherSuite>,
+    pub(super) server: &'static dyn crate::server::ServerHandler<Tls12CipherSuite>,
 }
 
 /// Internal data for handling the TLS1.3 protocol.
@@ -89,6 +89,6 @@ pub struct Tls12Version {
 #[non_exhaustive]
 #[derive(Debug)]
 pub struct Tls13Version {
-    pub(crate) client: &'static dyn crate::client::ClientHandler<Tls13CipherSuite>,
-    pub(crate) server: &'static dyn crate::server::ServerHandler<Tls13CipherSuite>,
+    pub(super) client: &'static dyn crate::client::ClientHandler<Tls13CipherSuite>,
+    pub(super) server: &'static dyn crate::server::ServerHandler<Tls13CipherSuite>,
 }

@@ -11,7 +11,7 @@ pub struct FfdheGroup<'a> {
 
 impl<'a> FfdheGroup<'a> {
     /// Construct an `FfdheGroup` from the given `p` and `g`, trimming any potential leading zeros.
-    pub fn from_params_trimming_leading_zeros(p: &'a [u8], g: &'a [u8]) -> Self {
+    pub(crate) fn from_params_trimming_leading_zeros(p: &'a [u8], g: &'a [u8]) -> Self {
         fn trim_leading_zeros(buf: &[u8]) -> &[u8] {
             for start in 0..buf.len() {
                 if buf[start] != 0 {
@@ -137,7 +137,7 @@ pub const FFDHE4096: FfdheGroup<'static> = FfdheGroup {
 /// FFDHE6144 group defined in [RFC 7919 Appendix A.4]
 ///
 /// [RFC 7919 Appendix A.4]: https://datatracker.ietf.org/doc/html/rfc7919#appendix-A.4
-pub const FFDHE6144: FfdheGroup<'static> = FfdheGroup {
+const FFDHE6144: FfdheGroup<'static> = FfdheGroup {
     p: &[
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xad, 0xf8, 0x54, 0x58, 0xa2, 0xbb, 0x4a,
         0x9a, 0xaf, 0xdc, 0x56, 0x20, 0x27, 0x3d, 0x3c, 0xf1, 0xd8, 0xb9, 0xc5, 0x83, 0xce, 0x2d,
@@ -198,7 +198,7 @@ pub const FFDHE6144: FfdheGroup<'static> = FfdheGroup {
 /// FFDHE8192 group defined in [RFC 7919 Appendix A.5]
 ///
 /// [RFC 7919 Appendix A.5]: https://datatracker.ietf.org/doc/html/rfc7919#appendix-A.5
-pub const FFDHE8192: FfdheGroup<'static> = FfdheGroup {
+const FFDHE8192: FfdheGroup<'static> = FfdheGroup {
     p: &[
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xad, 0xf8, 0x54, 0x58, 0xa2, 0xbb, 0x4a,
         0x9a, 0xaf, 0xdc, 0x56, 0x20, 0x27, 0x3d, 0x3c, 0xf1, 0xd8, 0xb9, 0xc5, 0x83, 0xce, 0x2d,

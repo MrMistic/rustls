@@ -21,14 +21,14 @@ use crate::suites::SupportedCipherSuite;
 
 /// Connection state common to both client and server connections.
 pub struct CommonState {
-    pub(crate) outputs: ConnectionOutputs,
-    pub(crate) send: SendPath,
-    pub(crate) recv: ReceivePath,
-    pub(crate) fips: FipsStatus,
+    pub(super) outputs: ConnectionOutputs,
+    pub(super) send: SendPath,
+    pub(super) recv: ReceivePath,
+    pub(super) fips: FipsStatus,
 }
 
 impl CommonState {
-    pub(crate) fn new(side: Side, fips: FipsStatus) -> Self {
+    pub(super) fn new(side: Side, fips: FipsStatus) -> Self {
         Self {
             outputs: ConnectionOutputs::default(),
             send: SendPath::default(),
@@ -40,7 +40,7 @@ impl CommonState {
     /// Returns true if the caller should call [`Connection::write_tls`] as soon as possible.
     ///
     /// [`Connection::write_tls`]: crate::Connection::write_tls
-    pub fn wants_write(&self) -> bool {
+    pub(super) fn wants_write(&self) -> bool {
         !self.send.sendable_tls.is_empty()
     }
 
@@ -51,7 +51,7 @@ impl CommonState {
     /// Does nothing if any `close_notify` or fatal alert was already sent.
     ///
     /// [`Connection::write_tls`]: crate::Connection::write_tls
-    pub fn send_close_notify(&mut self) {
+    pub(super) fn send_close_notify(&mut self) {
         self.send.send_close_notify()
     }
 
@@ -62,7 +62,7 @@ impl CommonState {
     /// while the final handshake packets still need to be extracted from the connection's buffers.
     ///
     /// [`Connection::process_new_packets()`]: crate::Connection::process_new_packets
-    pub fn is_handshaking(&self) -> bool {
+    pub(super) fn is_handshaking(&self) -> bool {
         !(self.send.may_send_application_data && self.recv.may_receive_application_data)
     }
 }
@@ -98,8 +98,8 @@ pub struct ConnectionOutputs {
     alpn_protocol: Option<ApplicationProtocol<'static>>,
     peer_identity: Option<Identity<'static>>,
     extended_master_secret: Option<bool>,
-    pub(crate) exporter: Option<Box<dyn Exporter>>,
-    pub(crate) early_exporter: Option<Box<dyn Exporter>>,
+    pub(super) exporter: Option<Box<dyn Exporter>>,
+    pub(super) early_exporter: Option<Box<dyn Exporter>>,
 }
 
 impl ConnectionOutputs {
@@ -213,7 +213,7 @@ impl ConnectionOutput for ConnectionOutputs {
 }
 
 /// Send an alert via `output` if `error` specifies one.
-pub(crate) fn maybe_send_fatal_alert(send: &mut dyn SendOutput, error: &Error) {
+pub(super) fn maybe_send_fatal_alert(send: &mut dyn SendOutput, error: &Error) {
     let Ok(alert) = AlertDescription::try_from(error) else {
         return;
     };
@@ -253,7 +253,7 @@ pub enum HandshakeKind {
 }
 
 /// The route for handshake state machine to surface determinations about the connection.
-pub(crate) trait Output<'m> {
+pub(super) trait Output<'m> {
     fn emit(&mut self, ev: Event<'_>);
 
     fn output(&mut self, ev: OutputEvent<'_>);
@@ -273,12 +273,12 @@ pub(crate) trait Output<'m> {
     fn send(&mut self) -> &mut dyn SendOutput;
 }
 
-pub(crate) trait ConnectionOutput {
+pub(super) trait ConnectionOutput {
     fn handle(&mut self, ev: OutputEvent<'_>);
 }
 
 /// The set of events output by the low-level handshake state machine.
-pub(crate) enum Event<'a> {
+pub(super) enum Event<'a> {
     EarlyApplicationData(Payload<'a>),
     EarlyData(EarlyDataEvent),
     EchStatus(EchStatus),
@@ -286,7 +286,7 @@ pub(crate) enum Event<'a> {
     ResumptionData(Vec<u8>),
 }
 
-pub(crate) enum OutputEvent<'a> {
+pub(super) enum OutputEvent<'a> {
     ApplicationProtocol(ApplicationProtocol<'a>),
     CipherSuite(SupportedCipherSuite),
     EarlyExporter(Box<dyn Exporter>),
@@ -298,7 +298,7 @@ pub(crate) enum OutputEvent<'a> {
     ProtocolVersion(ProtocolVersion),
 }
 
-pub(crate) enum EarlyDataEvent {
+pub(super) enum EarlyDataEvent {
     /// server: we accepted an early_data offer
     Accepted,
     /// client: declares the maximum amount of early data that can be sent
@@ -315,7 +315,7 @@ pub(crate) enum EarlyDataEvent {
 ///
 /// Stores an index into [`Payload`] buffer enabling in-place decryption
 /// without holding a lifetime to the receive buffer.
-pub(crate) enum UnborrowedPayload {
+pub(super) enum UnborrowedPayload {
     Unborrowed(Range<usize>),
     Owned(Vec<u8>),
 }
@@ -329,7 +329,7 @@ impl UnborrowedPayload {
     ///
     /// Passed [`Locator`] must have been created from the same slice which
     /// contains the payload.
-    pub(crate) fn unborrow(locator: &Locator, payload: Payload<'_>) -> Self {
+    pub(super) fn unborrow(locator: &Locator, payload: Payload<'_>) -> Self {
         match payload {
             Payload::Borrowed(payload) => Self::Unborrowed(locator.locate(payload)),
             Payload::Owned(payload) => Self::Owned(payload),
@@ -342,7 +342,7 @@ impl UnborrowedPayload {
     ///
     /// Passed [`Delocator`] must have been created from the same slice that
     /// [`UnborrowedPayload`] was originally unborrowed from.
-    pub(crate) fn reborrow<'b>(self, delocator: &Delocator<'b>) -> Payload<'b> {
+    pub(super) fn reborrow<'b>(self, delocator: &Delocator<'b>) -> Payload<'b> {
         match self {
             Self::Unborrowed(range) => Payload::Borrowed(delocator.slice_from_range(&range)),
             Self::Owned(payload) => Payload::Owned(payload),
@@ -361,7 +361,7 @@ pub enum Side {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub(crate) enum Protocol {
+pub(super) enum Protocol {
     /// TCP-TLS, standardized in RFC5246 and RFC8446
     Tcp,
     /// QUIC, standardized in RFC9001
@@ -369,32 +369,32 @@ pub(crate) enum Protocol {
 }
 
 impl Protocol {
-    pub(crate) fn is_quic(&self) -> bool {
+    pub(super) fn is_quic(&self) -> bool {
         matches!(self, Self::Quic(_))
     }
 }
 
-pub(crate) struct HandshakeFlight<'a, const TLS13: bool> {
-    pub(crate) transcript: &'a mut HandshakeHash,
+pub(super) struct HandshakeFlight<'a, const TLS13: bool> {
+    pub(super) transcript: &'a mut HandshakeHash,
     body: Vec<u8>,
 }
 
 impl<'a, const TLS13: bool> HandshakeFlight<'a, TLS13> {
-    pub(crate) fn new(transcript: &'a mut HandshakeHash) -> Self {
+    pub(super) fn new(transcript: &'a mut HandshakeHash) -> Self {
         Self {
             transcript,
             body: Vec::new(),
         }
     }
 
-    pub(crate) fn add(&mut self, hs: HandshakeMessagePayload<'_>) {
+    pub(super) fn add(&mut self, hs: HandshakeMessagePayload<'_>) {
         let start_len = self.body.len();
         hs.encode(&mut self.body);
         self.transcript
             .add(&self.body[start_len..]);
     }
 
-    pub(crate) fn finish(self, output: &mut dyn Output<'_>) {
+    pub(super) fn finish(self, output: &mut dyn Output<'_>) {
         let m = Message {
             version: match TLS13 {
                 true => ProtocolVersion::TLSv1_3,
@@ -407,5 +407,5 @@ impl<'a, const TLS13: bool> HandshakeFlight<'a, TLS13> {
     }
 }
 
-pub(crate) type HandshakeFlightTls12<'a> = HandshakeFlight<'a, false>;
-pub(crate) type HandshakeFlightTls13<'a> = HandshakeFlight<'a, true>;
+pub(super) type HandshakeFlightTls12<'a> = HandshakeFlight<'a, false>;
+pub(super) type HandshakeFlightTls13<'a> = HandshakeFlight<'a, true>;

@@ -43,7 +43,7 @@ use crate::verify::ClientIdentity;
 use crate::{ConnectionTrafficSecrets, compress, verify};
 
 #[expect(private_interfaces)]
-pub(crate) enum Tls13State {
+pub(super) enum Tls13State {
     SkipRejectedEarlyData(Box<ExpectAndSkipRejectedEarlyData>),
     CertificateOrCompressedCertificate(Box<ExpectCertificateOrCompressedCertificate>),
     Certificate(Box<ExpectCertificate>),
@@ -55,7 +55,7 @@ pub(crate) enum Tls13State {
 }
 
 impl Tls13State {
-    pub(crate) fn handle<'m>(
+    pub(super) fn handle<'m>(
         self,
         input: Input<'m>,
         output: &mut dyn Output<'m>,
@@ -412,7 +412,7 @@ mod client_hello {
     impl Sealed for Handler {}
 
     #[derive(PartialEq)]
-    pub(super) enum EarlyDataDecision {
+    enum EarlyDataDecision {
         Disabled,
         RequestedButRejected,
         Accepted { max_length: u32 },
@@ -1194,7 +1194,7 @@ impl From<Box<ExpectEarlyData>> for ServerState {
 }
 
 #[derive(Debug)]
-pub(crate) struct Tls13ServerSessionValue<'a> {
+pub(super) struct Tls13ServerSessionValue<'a> {
     common: CommonServerSessionValue<'a>,
     secret: ZeroizingCow<'a>,
     age_obfuscation_offset: u32,

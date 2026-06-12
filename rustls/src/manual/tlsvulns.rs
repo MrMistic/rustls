@@ -32,7 +32,7 @@ Encrypt-then-MAC for TLS, but unfortunately cannot be negotiated without also su
 ## RSA PKCS#1 encryption
 
 "RSA key exchange" in TLS involves the client choosing a large random value and encrypting it using the server's
-public key.  This has two overall problems:
+lic key.  This has two overall problems:
 
 1. It provides no _forward secrecy_: later compromise of the server's private key breaks confidentiality of
    *all* past sessions using that key.  This is a crucial property in the presence of software that is often
@@ -55,7 +55,7 @@ was demonstrated in 2011 by Thai Duong and Juliano Rizzo,
 and was another vulnerability in CBC-based ciphersuites in SSLv3.0 and TLSv1.0.  CBC mode is vulnerable to adaptive
 chosen-plaintext attacks if the IV is predictable.  In the case of these protocol versions, the IV was the previous
 block of ciphertext (as if the entire TLS session was one CBC ciphertext, albeit revealed incrementally).  This was
-obviously predictable, since it was published on the wire.
+obviously predictable, since it was lished on the wire.
 
 OpenSSL contained a countermeasure for this problem from 2002 onwards: it encrypts an empty message before each real
 one, so that the IV used in the real message is unpredictable.  This was turned off by default due to bugs in IE6.

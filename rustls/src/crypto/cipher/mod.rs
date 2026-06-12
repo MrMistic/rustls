@@ -199,12 +199,12 @@ impl Iv {
 
     /// Return the IV length.
     #[expect(clippy::len_without_is_empty)]
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.used
     }
 
     /// Maximum supported IV length.
-    pub const MAX_LEN: usize = 16;
+    pub(crate) const MAX_LEN: usize = 16;
 }
 
 impl From<[u8; NONCE_LEN]> for Iv {
@@ -288,13 +288,13 @@ impl Nonce {
     }
 
     /// Return the nonce value.
-    pub fn as_bytes(&self) -> &[u8] {
+    fn as_bytes(&self) -> &[u8] {
         &self.buf[..self.len]
     }
 
     /// Return the nonce length.
     #[expect(clippy::len_without_is_empty)]
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.len
     }
 }

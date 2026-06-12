@@ -127,15 +127,15 @@ use crate::{ClientConfig, ServerConfig};
 /// [`DangerousClientConfigBuilder::with_custom_certificate_verifier`]: crate::client::danger::DangerousClientConfigBuilder::with_custom_certificate_verifier
 #[derive(Clone)]
 pub struct ConfigBuilder<Side: ConfigSide, State> {
-    pub(crate) state: State,
-    pub(crate) provider: Arc<CryptoProvider>,
-    pub(crate) time_provider: Arc<dyn TimeProvider>,
-    pub(crate) side: PhantomData<Side>,
+    pub(super) state: State,
+    pub(super) provider: Arc<CryptoProvider>,
+    pub(super) time_provider: Arc<dyn TimeProvider>,
+    pub(super) side: PhantomData<Side>,
 }
 
 impl<Side: ConfigSide, State> ConfigBuilder<Side, State> {
     /// Return the crypto provider used to construct this builder.
-    pub fn crypto_provider(&self) -> &Arc<CryptoProvider> {
+    pub(super) fn crypto_provider(&self) -> &Arc<CryptoProvider> {
         &self.provider
     }
 }
@@ -159,7 +159,7 @@ impl<Side: ConfigSide, State: fmt::Debug> fmt::Debug for ConfigBuilder<Side, Sta
 /// For more information, see the [`ConfigBuilder`] documentation.
 #[derive(Clone, Debug)]
 pub struct WantsVerifier {
-    pub(crate) client_ech_mode: Option<EchMode>,
+    pub(super) client_ech_mode: Option<EchMode>,
 }
 
 /// Helper trait to abstract [`ConfigBuilder`] over building a [`ClientConfig`] or [`ServerConfig`].

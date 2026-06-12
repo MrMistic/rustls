@@ -347,20 +347,20 @@ pub(super) struct CertificateTypes {
     pub(super) client: CertificateType,
 }
 
-pub(crate) struct ReadClientHello {
+pub(super) struct ReadClientHello {
     protocol: Protocol,
     resumption_data: Vec<u8>,
 }
 
 impl ReadClientHello {
-    pub(crate) fn new(protocol: Protocol) -> Self {
+    pub(super) fn new(protocol: Protocol) -> Self {
         Self {
             protocol,
             resumption_data: Vec::new(),
         }
     }
 
-    pub(crate) fn handle<'m>(
+    fn handle<'m>(
         self,
         input: Input<'m>,
         _output: &mut dyn Output<'_>,
@@ -436,7 +436,7 @@ impl From<Box<ChooseConfig>> for ServerState {
     }
 }
 
-pub(crate) struct ExpectClientHello {
+pub(super) struct ExpectClientHello {
     pub(super) config: Arc<ServerConfig>,
     pub(super) protocol: Protocol,
     pub(super) extra_exts: ServerExtensionsInput,
@@ -477,7 +477,7 @@ impl ExpectClientHello {
     }
 
     /// Continues handling of a `ClientHello` message once config and certificate are available.
-    pub(super) fn with_input(
+    fn with_input(
         self,
         input: ClientHelloInput<'_>,
         output: &mut dyn Output<'_>,
@@ -724,7 +724,7 @@ impl ExpectClientHello {
 }
 
 impl ExpectClientHello {
-    pub(crate) fn handle<'m>(
+    pub(super) fn handle<'m>(
         self,
         input: Input<'m>,
         output: &mut dyn Output<'_>,
@@ -757,10 +757,10 @@ pub(crate) trait ServerHandler<T>: fmt::Debug + Sealed + Send + Sync {
     ) -> Result<ServerState, Error>;
 }
 
-pub(crate) struct ClientHelloInput<'a> {
+pub(super) struct ClientHelloInput<'a> {
     pub(super) message: &'a Message<'a>,
     pub(super) client_hello: &'a ClientHelloPayload,
-    pub(super) sig_schemes: &'a [SignatureScheme],
+    sig_schemes: &'a [SignatureScheme],
     pub(super) proof: HandshakeAlignedProof,
 }
 
@@ -804,7 +804,7 @@ impl<'a> ClientHelloInput<'a> {
     }
 }
 
-pub(crate) enum HandshakeHashOrBuffer {
+pub(super) enum HandshakeHashOrBuffer {
     Buffer(HandshakeHashBuffer),
     Hash(HandshakeHash),
 }

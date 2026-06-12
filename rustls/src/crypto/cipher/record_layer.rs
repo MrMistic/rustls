@@ -70,7 +70,7 @@ impl EncryptionState {
         }
     }
 
-    pub(crate) fn encrypted_len(&self, payload_len: usize) -> usize {
+    pub(super) fn encrypted_len(&self, payload_len: usize) -> usize {
         self.message_encrypter
             .as_ref()
             .map(|enc| enc.encrypted_payload_len(payload_len))

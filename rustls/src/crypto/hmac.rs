@@ -39,9 +39,9 @@ impl Tag {
         Self(PublicTag::new(bytes))
     }
 
-    /// Declare this tag is public.
+    /// Declare this tag is lic.
     ///
-    /// Uses of this function should explain why this tag is public.
+    /// Uses of this function should explain why this tag is lic.
     pub(crate) fn into_public(self) -> PublicTag {
         let public = self.0.clone();
         mem::forget(self);
@@ -49,7 +49,7 @@ impl Tag {
     }
 
     /// Maximum supported HMAC tag size: supports up to SHA512.
-    pub const MAX_LEN: usize = 64;
+    pub(super) const MAX_LEN: usize = 64;
 }
 
 impl Drop for Tag {
@@ -69,9 +69,9 @@ impl AsRef<[u8]> for Tag {
 ///
 /// A value of this type is **not** zeroized on drop.
 ///
-/// A tag is "public" if it is published on the wire, as opposed to
+/// A tag is "lic" if it is lished on the wire, as opposed to
 /// being used as key material. For example, the `verify_data` field
-/// of TLS `Finished` messages are public (as they are published on
+/// of TLS `Finished` messages are public (as they are lished on
 /// the wire in TLS1.2, or sent encrypted under pre-authenticated
 /// secrets in TLS1.3).
 #[derive(Clone)]
@@ -84,7 +84,7 @@ impl PublicTag {
     /// Build a tag by copying a byte slice.
     ///
     /// The slice can be up to [`Tag::MAX_LEN`] bytes in length.
-    pub(crate) fn new(bytes: &[u8]) -> Self {
+    fn new(bytes: &[u8]) -> Self {
         let mut tag = Self {
             buf: [0u8; Tag::MAX_LEN],
             used: bytes.len(),

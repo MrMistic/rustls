@@ -36,7 +36,7 @@ use crate::verify::{ClientIdentity, SignatureVerificationInput};
 use crate::{ConnectionTrafficSecrets, verify};
 
 #[expect(private_interfaces)]
-pub(crate) enum Tls12State {
+pub(super) enum Tls12State {
     Certificate(Box<ExpectCertificate>),
     ClientKx(Box<ExpectClientKx>),
     CertificateVerify(Box<ExpectCertificateVerify>),
@@ -46,7 +46,7 @@ pub(crate) enum Tls12State {
 }
 
 impl Tls12State {
-    pub(crate) fn handle<'m>(
+    pub(super) fn handle<'m>(
         self,
         input: Input<'m>,
         output: &mut dyn Output<'m>,
@@ -777,7 +777,7 @@ impl From<Box<ExpectCcs>> for ServerState {
 }
 
 #[derive(Debug)]
-pub(crate) struct Tls12ServerSessionValue<'a> {
+pub(super) struct Tls12ServerSessionValue<'a> {
     common: CommonServerSessionValue<'a>,
     master_secret: ZeroizingCow<'a, 48>,
     extended_ms: bool,
@@ -933,7 +933,7 @@ fn emit_finished(
     output.send_msg(f, true);
 }
 
-pub(super) struct ExpectFinished {
+struct ExpectFinished {
     hs: HandshakeState,
     secrets: ConnectionSecrets,
     peer_identity: Option<Identity<'static>>,

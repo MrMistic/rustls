@@ -48,7 +48,7 @@ use crate::{ConnectionOutputs, ConnectionTrafficSecrets, Error, SupportedCipherS
 /// top of kTLS.
 ///
 /// See the [`crate::kernel`] module docs for more details.
-pub struct KernelConnection<Side> {
+pub(super) struct KernelConnection<Side> {
     state: Box<dyn KernelState>,
     tls13_key_schedule: Option<Box<KeyScheduleTrafficSend>>,
 
@@ -59,7 +59,7 @@ pub struct KernelConnection<Side> {
 }
 
 impl<Side> KernelConnection<Side> {
-    pub(crate) fn new(
+    pub(super) fn new(
         state: Box<dyn KernelState>,
         outputs: ConnectionOutputs,
         tls13_key_schedule: Option<Box<KeyScheduleTrafficSend>>,
@@ -79,12 +79,12 @@ impl<Side> KernelConnection<Side> {
     }
 
     /// Retrieves the cipher suite agreed with the peer.
-    pub fn negotiated_cipher_suite(&self) -> SupportedCipherSuite {
+    fn negotiated_cipher_suite(&self) -> SupportedCipherSuite {
         self.suite
     }
 
     /// Retrieves the protocol version agreed with the peer.
-    pub fn protocol_version(&self) -> ProtocolVersion {
+    fn protocol_version(&self) -> ProtocolVersion {
         self.negotiated_version
     }
 
@@ -99,7 +99,7 @@ impl<Side> KernelConnection<Side> {
     /// Note that it is only possible to update the traffic secrets on a TLS 1.3
     /// connection. Attempting to do so on a non-TLS 1.3 connection will result
     /// in an error.
-    pub fn update_tx_secret(&mut self) -> Result<(u64, ConnectionTrafficSecrets), Error> {
+    fn update_tx_secret(&mut self) -> Result<(u64, ConnectionTrafficSecrets), Error> {
         match &mut self.tls13_key_schedule {
             // The sequence number always starts at 0 after a key update.
             Some(ks) => ks
@@ -120,7 +120,7 @@ impl<Side> KernelConnection<Side> {
     /// Note that it is only possible to update the traffic secrets on a TLS 1.3
     /// connection. Attempting to do so on a non-TLS 1.3 connection will result
     /// in an error.
-    pub fn update_rx_secret(&mut self) -> Result<(u64, ConnectionTrafficSecrets), Error> {
+    fn update_rx_secret(&mut self) -> Result<(u64, ConnectionTrafficSecrets), Error> {
         // The sequence number always starts at 0 after a key update.
         self.state
             .update_rx_secret()
@@ -192,7 +192,7 @@ impl KernelConnection<ClientSide> {
     /// - An error occurs while the connection updates the session ticket store.
     ///
     /// [0]: https://datatracker.ietf.org/doc/html/rfc8446#section-4
-    pub fn handle_new_session_ticket(&mut self, payload: &[u8]) -> Result<(), Error> {
+    fn handle_new_session_ticket(&mut self, payload: &[u8]) -> Result<(), Error> {
         // We want to return a more specific error here first if this is called
         // on a non-TLS 1.3 connection since a parsing error isn't the real issue
         // here.

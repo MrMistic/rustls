@@ -332,11 +332,11 @@ mod log {
     macro_rules! error    ( ($($tt:tt)*) => { crate::log::_used!($($tt)*) } );
     macro_rules! _warn    ( ($($tt:tt)*) => { crate::log::_used!($($tt)*) } );
     macro_rules! _used    ( ($($tt:tt)*) => { { let _ = format_args!($($tt)*); } } );
-    pub(crate) use _used;
-    pub(crate) use _warn as warn;
-    pub(crate) use debug;
-    pub(crate) use error;
-    pub(crate) use trace;
+    use _used;
+    use _warn as warn;
+    use debug;
+    use error;
+    use trace;
 }
 
 /// This internal `sync` module aliases the `Arc` implementation to allow downstream forks
@@ -344,7 +344,7 @@ mod log {
 /// with another implementation such as `portable_atomic_util::Arc` in one central location.
 mod sync {
     #[expect(clippy::disallowed_types)]
-    pub(crate) type Arc<T> = alloc::sync::Arc<T>;
+    pub(super) type Arc<T> = alloc::sync::Arc<T>;
 }
 
 #[expect(unnameable_types)]
@@ -377,8 +377,8 @@ mod webpki;
 /// Internal classes that are used in integration tests.
 /// The contents of this section DO NOT form part of the stable interface.
 #[doc(hidden)]
-pub mod internal {
-    pub use crate::msgs::fuzzing;
+mod internal {
+    use crate::msgs::fuzzing;
 }
 
 // The public interface is:
@@ -392,11 +392,11 @@ pub use crate::key_log::{KeyLog, NoKeyLog};
 pub use crate::suites::{
     CipherSuiteCommon, ConnectionTrafficSecrets, ExtractedSecrets, SupportedCipherSuite,
 };
-pub use crate::ticketer::TicketRotator;
+use crate::ticketer::TicketRotator;
 pub use crate::tls12::Tls12CipherSuite;
 pub use crate::tls13::Tls13CipherSuite;
 pub use crate::verify::{DigitallySignedStruct, DistinguishedName, SignerPublicKey};
-pub use crate::versions::{ALL_VERSIONS, DEFAULT_VERSIONS, SupportedProtocolVersion};
+use crate::versions::{ALL_VERSIONS, DEFAULT_VERSIONS, SupportedProtocolVersion};
 #[cfg(feature = "webpki")]
 pub use crate::webpki::RootCertStore;
 
@@ -430,28 +430,28 @@ pub mod quic;
 pub mod ticketer;
 
 /// This is the rustls manual.
-pub mod manual;
+mod manual;
 
 pub mod time_provider;
 
 /// APIs abstracting over locking primitives.
-pub mod lock;
+mod lock;
 
 mod hash_map {
-    pub(crate) use std::collections::HashMap;
-    pub(crate) use std::collections::hash_map::Entry;
+    pub(super) use std::collections::HashMap;
+    pub(super) use std::collections::hash_map::Entry;
 }
 
 mod sealed {
     #[expect(unnameable_types)]
-    pub trait Sealed {}
+    pub(super) trait Sealed {}
 }
 
 mod core_hash_polyfill {
     use core::hash::Hasher;
 
     /// Working around `core::hash::Hasher` not being dyn-compatible
-    pub(super) struct DynHasher<'a>(pub(crate) &'a mut dyn Hasher);
+    pub(super) struct DynHasher<'a>(pub(super) &'a mut dyn Hasher);
 
     impl Hasher for DynHasher<'_> {
         fn finish(&self) -> u64 {
@@ -464,4 +464,4 @@ mod core_hash_polyfill {
     }
 }
 
-pub(crate) use core_hash_polyfill::DynHasher;
+use core_hash_polyfill::DynHasher;

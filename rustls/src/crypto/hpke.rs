@@ -25,12 +25,12 @@ pub struct HpkeSuite {
 
 /// An HPKE instance that can be used for base-mode single-shot encryption and decryption.
 pub trait Hpke: Debug + Send + Sync {
-    /// Seal the provided `plaintext` to the recipient public key `pub_key` with application supplied
+    /// Seal the provided `plaintext` to the recipient public key `_key` with application supplied
     /// `info`, and additional data `aad`.
     ///
     /// Returns ciphertext that can be used with [Self::open] by the recipient to recover plaintext
-    /// using the same `info` and `aad` and the private key corresponding to `pub_key`. RFC 9180
-    /// refers to `pub_key` as `pkR`.
+    /// using the same `info` and `aad` and the private key corresponding to `_key`. RFC 9180
+    /// refers to `_key` as `pkR`.
     fn seal(
         &self,
         info: &[u8],
@@ -39,10 +39,10 @@ pub trait Hpke: Debug + Send + Sync {
         pub_key: &HpkePublicKey,
     ) -> Result<(EncapsulatedSecret, Vec<u8>), Error>;
 
-    /// Set up a sealer context for the receiver public key `pub_key` with application supplied `info`.
+    /// Set up a sealer context for the receiver public key `_key` with application supplied `info`.
     ///
     /// Returns both an encapsulated ciphertext and a sealer context that can be used to seal
-    /// messages to the recipient. RFC 9180 refers to `pub_key` as `pkR`.
+    /// messages to the recipient. RFC 9180 refers to `_key` as `pkR`.
     fn setup_sealer(
         &self,
         info: &[u8],
@@ -172,7 +172,7 @@ enum_builder! {
     /// Listed by IANA, as specified in [RFC 9180 Section 7.1]
     ///
     /// [RFC 9180 Section 7.1]: <https://datatracker.ietf.org/doc/html/rfc9180#kemid-values>
-    pub struct HpkeKem(pub u16);
+    pub struct HpkeKem( u16);
 
     enum HpkeKemName {
         DHKEM_P256_HKDF_SHA256 => 0x0010,
@@ -188,7 +188,7 @@ enum_builder! {
     /// Listed by IANA, as specified in [RFC 9180 Section 7.2]
     ///
     /// [RFC 9180 Section 7.2]: <https://datatracker.ietf.org/doc/html/rfc9180#name-key-derivation-functions-kd>
-    pub struct HpkeKdf(pub u16);
+    pub struct HpkeKdf( u16);
 
     enum HpkeKdfName {
         HKDF_SHA256 => 0x0001,
@@ -209,7 +209,7 @@ enum_builder! {
     /// Listed by IANA, as specified in [RFC 9180 Section 7.3]
     ///
     /// [RFC 9180 Section 7.3]: <https://datatracker.ietf.org/doc/html/rfc9180#name-authenticated-encryption-wi>
-    pub struct HpkeAead(pub u16);
+    pub struct HpkeAead( u16);
 
     enum HpkeAeadName {
         AES_128_GCM => 0x0001,
@@ -241,11 +241,11 @@ impl HpkeAead {
 
 /// An HPKE key pair, made of a matching public and private key.
 #[expect(clippy::exhaustive_structs)]
-pub struct HpkeKeyPair {
+struct HpkeKeyPair {
     /// A HPKE public key.
-    pub public_key: HpkePublicKey,
+    lic_key: HpkePublicKey,
     /// A HPKE private key.
-    pub private_key: HpkePrivateKey,
+    private_key: HpkePrivateKey,
 }
 
 /// An encapsulated secret returned from setting up a sender or receiver context.

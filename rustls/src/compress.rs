@@ -44,7 +44,7 @@ use crate::sync::Arc;
 
 /// Returns the supported `CertDecompressor` implementations enabled
 /// by crate features.
-pub fn default_cert_decompressors() -> &'static [&'static dyn CertDecompressor] {
+pub(super) fn default_cert_decompressors() -> &'static [&'static dyn CertDecompressor] {
     &[
         #[cfg(feature = "brotli")]
         BROTLI_DECOMPRESSOR,
@@ -69,7 +69,7 @@ pub trait CertDecompressor: Debug + Send + Sync {
 
 /// Returns the supported `CertCompressor` implementations enabled
 /// by crate features.
-pub fn default_cert_compressors() -> &'static [&'static dyn CertCompressor] {
+pub(super) fn default_cert_compressors() -> &'static [&'static dyn CertCompressor] {
     &[
         #[cfg(feature = "brotli")]
         BROTLI_COMPRESSOR,
@@ -195,7 +195,7 @@ mod feat_brotli {
     use super::*;
 
     /// A certificate decompressor for the brotli algorithm using the `brotli` crate.
-    pub const BROTLI_DECOMPRESSOR: &dyn CertDecompressor = &BrotliDecompressor;
+    pub(super) const BROTLI_DECOMPRESSOR: &dyn CertDecompressor = &BrotliDecompressor;
 
     #[derive(Debug)]
     struct BrotliDecompressor;
@@ -221,7 +221,7 @@ mod feat_brotli {
     }
 
     /// A certificate compressor for the brotli algorithm using the `brotli` crate.
-    pub const BROTLI_COMPRESSOR: &dyn CertCompressor = &BrotliCompressor;
+    pub(super) const BROTLI_COMPRESSOR: &dyn CertCompressor = &BrotliCompressor;
 
     #[derive(Debug)]
     struct BrotliCompressor;
@@ -266,7 +266,7 @@ mod feat_brotli {
 }
 
 #[cfg(feature = "brotli")]
-pub use feat_brotli::{BROTLI_COMPRESSOR, BROTLI_DECOMPRESSOR};
+use feat_brotli::{BROTLI_COMPRESSOR, BROTLI_DECOMPRESSOR};
 
 /// An LRU cache for compressions.
 ///
@@ -288,7 +288,7 @@ pub enum CompressionCache {
 ///
 /// You cannot make one of these directly. Use [`CompressionCache::new`].
 #[derive(Debug)]
-pub struct CompressionCacheInner {
+struct CompressionCacheInner {
     /// Maximum size of underlying storage.
     size: usize,
 
@@ -301,7 +301,7 @@ pub struct CompressionCacheInner {
 impl CompressionCache {
     /// Make a `CompressionCache` that stores up to `size` compressed
     /// certificate messages.
-    pub fn new(size: usize) -> Self {
+    fn new(size: usize) -> Self {
         if size == 0 {
             return Self::Disabled;
         }
@@ -317,7 +317,7 @@ impl CompressionCache {
     ///
     /// `compressor` is the compression function we have negotiated.
     /// `original` is the uncompressed certificate message.
-    pub(crate) fn compression_for(
+    pub(super) fn compression_for(
         &self,
         compressor: &dyn CertCompressor,
         original: &CertificatePayloadTls13<'_>,
@@ -417,7 +417,7 @@ impl Default for CompressionCache {
 }
 
 #[derive(Debug)]
-pub(crate) struct CompressionCacheEntry {
+pub(super) struct CompressionCacheEntry {
     // cache key is algorithm + original:
     algorithm: CertificateCompressionAlgorithm,
     original: Vec<u8>,
@@ -427,7 +427,7 @@ pub(crate) struct CompressionCacheEntry {
 }
 
 impl CompressionCacheEntry {
-    pub(crate) fn compressed_cert_payload(&self) -> CompressedCertificatePayload<'_> {
+    pub(super) fn compressed_cert_payload(&self) -> CompressedCertificatePayload<'_> {
         self.compressed.as_borrowed()
     }
 }

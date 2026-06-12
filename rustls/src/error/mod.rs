@@ -717,7 +717,7 @@ impl fmt::Display for CertificateError {
 enum_builder! {
     /// The `AlertDescription` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct AlertDescription(pub u8);
+    pub struct AlertDescription( u8);
 
     enum AlertDescriptionName {
         CloseNotify => 0x00,
@@ -1168,7 +1168,7 @@ pub enum ExtendedKeyPurpose {
 
 impl ExtendedKeyPurpose {
     #[cfg(feature = "webpki")]
-    pub(crate) fn for_values(values: impl Iterator<Item = usize>) -> Self {
+    pub(super) fn for_values(values: impl Iterator<Item = usize>) -> Self {
         let values = values.collect::<Vec<_>>();
         match &*values {
             ExtendedKeyUsage::CLIENT_AUTH_REPR => Self::ClientAuth,
@@ -1199,7 +1199,7 @@ impl fmt::Display for ExtendedKeyPurpose {
 /// The ways in which a certificate revocation list (CRL) can be invalid.
 #[non_exhaustive]
 #[derive(Debug, Clone)]
-pub enum CertRevocationListError {
+pub(super) enum CertRevocationListError {
     /// The CRL had a bad signature from its issuer.
     BadSignature,
 
@@ -1304,7 +1304,7 @@ impl PartialEq<Self> for CertRevocationListError {
 /// An error that occurred while handling Encrypted Client Hello (ECH).
 #[non_exhaustive]
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum EncryptedClientHelloError {
+pub(super) enum EncryptedClientHelloError {
     /// The provided ECH configuration list was invalid.
     InvalidConfigList,
     /// No compatible ECH configuration.
@@ -1320,8 +1320,8 @@ pub enum EncryptedClientHelloError {
 /// connection that will use a compatible ECH configuration provided by the server for a retry.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
-pub struct RejectedEch {
-    pub(crate) retry_configs: Option<Vec<EchConfigPayload>>,
+pub(super) struct RejectedEch {
+    pub(super) retry_configs: Option<Vec<EchConfigPayload>>,
 }
 
 impl RejectedEch {
@@ -1330,12 +1330,12 @@ impl RejectedEch {
     /// The `RejectedEch` error can be provided to [`crate::client::EchConfig::for_retry()`]
     /// to build a new `EchConfig` for a fresh client connection that will use a compatible ECH
     /// configuration provided by the server for a retry.
-    pub fn can_retry(&self) -> bool {
+    fn can_retry(&self) -> bool {
         self.retry_configs.is_some()
     }
 
     /// Returns an `EchConfigListBytes` with the server's provided retry configurations (if any)
-    pub fn retry_configs(&self) -> Option<EchConfigListBytes<'static>> {
+    fn retry_configs(&self) -> Option<EchConfigListBytes<'static>> {
         let Some(retry_configs) = &self.retry_configs else {
             return None;
         };
@@ -1564,14 +1564,14 @@ pub use other_error::OtherError;
 
 /// An [`Error`] along with the (possibly encrypted) alert to send to
 /// the peer.
-pub struct ErrorWithAlert {
+pub(super) struct ErrorWithAlert {
     /// The error
-    pub error: Error,
-    pub(crate) data: Vec<u8>,
+    pub(super) error: Error,
+    pub(super) data: Vec<u8>,
 }
 
 impl ErrorWithAlert {
-    pub(crate) fn new(error: Error, send_path: &mut SendPath) -> Self {
+    pub(super) fn new(error: Error, send_path: &mut SendPath) -> Self {
         maybe_send_fatal_alert(send_path, &error);
         Self {
             error,
@@ -1582,7 +1582,7 @@ impl ErrorWithAlert {
     /// Consume any pending TLS data.
     ///
     /// The returned buffer will contain the alert, if one is to be sent.
-    pub fn take_tls_data(&mut self) -> Option<Vec<u8>> {
+    fn take_tls_data(&mut self) -> Option<Vec<u8>> {
         match self.data.is_empty() {
             true => None,
             false => Some(mem::take(&mut self.data)),

@@ -139,7 +139,7 @@ pub struct ClientConfig {
     pub require_ems: bool,
 
     /// Items that affect the fundamental security properties of a connection.
-    pub(super) domain: SecurityDomain,
+    domain: SecurityDomain,
 
     /// How to decompress the server's certificate chain.
     ///
@@ -169,7 +169,7 @@ pub struct ClientConfig {
     ///
     /// This is optional: [`compress::CompressionCache::Disabled`] gives
     /// a cache that does no caching.
-    pub cert_compression_cache: Arc<compress::CompressionCache>,
+    pub(super) cert_compression_cache: Arc<compress::CompressionCache>,
 
     /// How to offer Encrypted Client Hello (ECH). The default is to not offer ECH.
     pub(super) ech_mode: Option<EchMode>,
@@ -244,7 +244,7 @@ impl ClientConfig {
     }
 
     /// Return the crypto provider used to construct this client configuration.
-    pub fn provider(&self) -> &Arc<CryptoProvider> {
+    pub(crate) fn provider(&self) -> &Arc<CryptoProvider> {
         &self.domain.provider
     }
 
@@ -259,11 +259,11 @@ impl ClientConfig {
     /// Return the verifier for this client configuration.
     ///
     /// This is the object that determines how server certificates are verified.
-    pub fn verifier(&self) -> &Arc<dyn verify::ServerVerifier> {
+    pub(super) fn verifier(&self) -> &Arc<dyn verify::ServerVerifier> {
         &self.domain.verifier
     }
 
-    pub(crate) fn supports_version(&self, v: ProtocolVersion) -> bool {
+    pub(super) fn supports_version(&self, v: ProtocolVersion) -> bool {
         self.domain.provider.supports_version(v)
     }
 
@@ -353,10 +353,10 @@ pub trait ClientSessionStore: fmt::Debug + Send + Sync {
 #[non_exhaustive]
 pub struct ClientSessionKey<'a> {
     /// A hash to partition the client storage between different security domains.
-    pub config_hash: [u8; 32],
+    pub(super) config_hash: [u8; 32],
 
     /// Transport-level identity of the server.
-    pub server_name: ServerName<'a>,
+    pub(super) server_name: ServerName<'a>,
 }
 
 impl ClientSessionKey<'_> {
@@ -439,7 +439,7 @@ impl CredentialRequest<'_> {
     /// If the server does not support [RFC 7250], this will be `CertificateType::X509`.
     ///
     /// [RFC 7250]: https://tools.ietf.org/html/rfc7250
-    pub fn negotiated_type(&self) -> CertificateType {
+    pub(crate) fn negotiated_type(&self) -> CertificateType {
         self.negotiated_type
     }
 }
@@ -450,7 +450,7 @@ impl CredentialRequest<'_> {
 /// fields therefore should not be mutated, but an entire object created
 /// through [`Self::new`] for any edits.
 #[derive(Clone, Debug)]
-pub(super) struct SecurityDomain {
+struct SecurityDomain {
     /// Provides the current system time
     time_provider: Arc<dyn TimeProvider>,
 
@@ -467,7 +467,7 @@ pub(super) struct SecurityDomain {
 }
 
 impl SecurityDomain {
-    pub(crate) fn new(
+    fn new(
         provider: Arc<CryptoProvider>,
         client_auth_cert_resolver: Arc<dyn ClientCredentialResolver + 'static>,
         verifier: Arc<dyn verify::ServerVerifier + 'static>,
@@ -545,7 +545,7 @@ impl Resumption {
     ///
     /// This is the default `Resumption` choice, and enables resuming a TLS 1.2 session with
     /// a session id or RFC 5077 ticket.
-    pub fn in_memory_sessions(num: usize) -> Self {
+    pub(super) fn in_memory_sessions(num: usize) -> Self {
         Self {
             store: Arc::new(ClientSessionMemoryCache::new(num)),
             tls12_resumption: Tls12Resumption::SessionIdOrTickets,
@@ -636,7 +636,7 @@ impl ConfigBuilder<ClientConfig, WantsVerifier> {
     ///
     /// See [`webpki::WebPkiServerVerifier::builder`] for more information.
     #[cfg(feature = "webpki")]
-    pub fn with_webpki_verifier(
+    fn with_webpki_verifier(
         self,
         verifier: Arc<WebPkiServerVerifier>,
     ) -> ConfigBuilder<ClientConfig, WantsClientCert> {

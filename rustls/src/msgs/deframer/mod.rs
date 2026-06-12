@@ -12,7 +12,7 @@ mod buffers;
 use buffers::Coalescer;
 pub(crate) use buffers::{Delocator, Locator, TlsInputBuffer, VecInput};
 
-pub fn fuzz_deframer(data: &[u8]) {
+pub(super) fn fuzz_deframer(data: &[u8]) {
     let mut buf = data.to_vec();
     let mut deframer = Deframer::default();
     while let Some(result) = deframer.deframe(&mut buf) {
@@ -306,7 +306,7 @@ impl Deframer {
     }
 
     #[inline]
-    pub(crate) fn processed(&self) -> usize {
+    fn processed(&self) -> usize {
         self.processed
     }
 }

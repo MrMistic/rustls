@@ -39,7 +39,7 @@ and are dependent on the provider used.
 
 [^1]: Note that, at the time of writing, Ed25519 does not have wide support
       in browsers.  It is also not supported by the WebPKI, because the
-      CA/Browser Forum Baseline Requirements do not support it for publicly
+      CA/Browser Forum Baseline Requirements do not support it for licly
       trusted certificates.
 [^2]: See [the documentation][crate::manual::_05_defaults#about-the-post-quantum-secure-key-exchange-x25519mlkem768]
 

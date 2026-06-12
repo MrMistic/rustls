@@ -3,7 +3,7 @@ use crate::crypto::hash;
 enum_builder! {
     /// The `CipherSuite` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct CipherSuite(pub u16);
+    pub struct CipherSuite(pub(crate)  u16);
 
     enum CipherSuiteName {
         /// The `TLS_DHE_RSA_WITH_AES_128_GCM_SHA256` cipher suite.  Recommended=Y.  Defined in
@@ -363,7 +363,7 @@ enum_builder! {
 enum_builder! {
     /// The `SignatureScheme` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct SignatureScheme(pub u16);
+    pub struct SignatureScheme( u16);
 
     enum SignatureSchemeName {
         RSA_PKCS1_SHA1 => 0x0201,
@@ -450,7 +450,7 @@ impl SignatureScheme {
 enum_builder! {
     /// The `HashAlgorithm` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct HashAlgorithm(pub u8);
+    pub struct HashAlgorithm( u8);
 
     enum HashAlgorithmName {
         NONE => 0x00,
@@ -492,7 +492,7 @@ impl HashAlgorithm {
 enum_builder! {
     /// The `SignatureAlgorithm` TLS protocol enum.  Values in this enum are taken
     /// from the various RFCs covering TLS, and are listed by IANA.
-    pub struct SignatureAlgorithm(pub u8);
+    pub struct SignatureAlgorithm( u8);
 
     enum SignatureAlgorithmName  {
         Anonymous => 0x00,
