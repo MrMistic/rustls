@@ -457,6 +457,8 @@ mod bs_debug;
 mod builder;
 mod enums;
 mod key_log;
+#[cfg(feature = "timing")]
+pub mod timing;
 #[cfg(feature = "std")]
 mod key_log_file;
 mod suites;

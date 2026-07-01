@@ -61,6 +61,8 @@ pub struct CommonState {
     pub(crate) refresh_traffic_keys_pending: bool,
     pub(crate) fips: bool,
     pub(crate) tls13_tickets_received: u32,
+    #[cfg(feature = "timing")]
+    pub(crate) timing: Option<crate::timing::TimingState>,
 }
 
 impl CommonState {
@@ -94,6 +96,8 @@ impl CommonState {
             refresh_traffic_keys_pending: false,
             fips: false,
             tls13_tickets_received: 0,
+            #[cfg(feature = "timing")]
+            timing: None,
         }
     }
 
@@ -215,6 +219,27 @@ impl CommonState {
             }
         }
 
+        // (1) Before handle: extract message name if handshake
+        #[cfg(feature = "timing")]
+        let msg_name: Option<&'static str> =
+            if matches!(msg.payload, MessagePayload::Handshake { .. }) {
+                Some(crate::timing::message_name(
+                    crate::timing::handshake_type_of(&msg),
+                    self.side,
+                ))
+            } else {
+                None
+            };
+
+        // (2) NEGOTIATE_START before first handshake message
+        #[cfg(feature = "timing")]
+        if msg_name.is_some() {
+            self.timing_negotiate_start();
+        }
+
+        #[cfg(feature = "timing")]
+        let was_handshaking = self.is_handshaking();
+
         let mut cx = Context {
             common: self,
             data,
@@ -223,12 +248,24 @@ impl CommonState {
         match state.handle(&mut cx, msg) {
             Ok(next) => {
                 state = next.into_owned();
+                // (3) Per-message checkpoint AFTER successful handler return
+                #[cfg(feature = "timing")]
+                {
+                    if let Some(name) = msg_name {
+                        self.timing_message(name);
+                    }
+                    // (4) END anchor on handshaking -> completed transition
+                    if was_handshaking && !self.is_handshaking() {
+                        self.timing_negotiate_end();
+                    }
+                }
                 Ok(state)
             }
             Err(e @ Error::InappropriateMessage { .. })
             | Err(e @ Error::InappropriateHandshakeMessage { .. }) => {
                 Err(self.send_fatal_alert(AlertDescription::UnexpectedMessage, e))
             }
+            // (Requirement 1.6 / 2.5) No checkpoint and no END on error path.
             Err(e) => Err(e),
         }
     }
@@ -777,6 +814,65 @@ impl CommonState {
         }
 
         self.send_plain_non_buffering(payload, limit)
+    }
+
+    /// Emit NEGOTIATE_START exactly once per handshake, capturing the epoch.
+    #[cfg(feature = "timing")]
+    fn timing_negotiate_start(&mut self) {
+        let role = crate::timing::Role::from(self.side);
+        if let Some(t) = self.timing.as_mut() {
+            if !t.started {
+                t.epoch = Some(std::time::Instant::now());
+                t.started = true;
+                let cp = crate::timing::TimingCheckpoint {
+                    name: "NEGOTIATE_START".into(),
+                    role,
+                    timestamp_ns: 0,
+                };
+                t.subscriber().on_timing_checkpoint(&cp);
+            }
+        }
+    }
+
+    /// Emit a handshake-message checkpoint with a freshly-read timestamp.
+    #[cfg(feature = "timing")]
+    fn timing_message(&mut self, name: &str) {
+        let role = crate::timing::Role::from(self.side);
+        if let Some(t) = self.timing.as_mut() {
+            // Suppress post-handshake messages (e.g. NEW_SESSION_TICKET in
+            // TLS 1.3). Once NEGOTIATE_END has fired, the handshake window is
+            // closed and NEGOTIATE_END must remain the terminal checkpoint, so
+            // the consumer always sees a clean NEGOTIATE_START..NEGOTIATE_END
+            // sequence (Requirement 2.4).
+            if t.ended {
+                return;
+            }
+            let ns = t.elapsed_ns_now();
+            let cp = crate::timing::TimingCheckpoint {
+                name: name.into(),
+                role,
+                timestamp_ns: ns,
+            };
+            t.subscriber().on_timing_checkpoint(&cp);
+        }
+    }
+
+    /// Emit NEGOTIATE_END exactly once, only on a transition into the completed state.
+    #[cfg(feature = "timing")]
+    fn timing_negotiate_end(&mut self) {
+        let role = crate::timing::Role::from(self.side);
+        if let Some(t) = self.timing.as_mut() {
+            if t.started && !t.ended {
+                t.ended = true;
+                let ns = t.elapsed_ns_now();
+                let cp = crate::timing::TimingCheckpoint {
+                    name: "NEGOTIATE_END".into(),
+                    role,
+                    timestamp_ns: ns,
+                };
+                t.subscriber().on_timing_checkpoint(&cp);
+            }
+        }
     }
 }
 

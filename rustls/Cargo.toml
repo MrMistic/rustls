@@ -27,6 +27,7 @@ prefer-post-quantum = ["aws_lc_rs"]
 read_buf = ["rustversion", "std"]
 ring = ["dep:ring", "webpki/ring"]
 std = ["webpki/std", "pki-types/std", "once_cell/std"]
+timing = []
 tls12 = []
 zlib = ["dep:zlib-rs"]
 
@@ -56,6 +57,7 @@ hex = { workspace = true }
 log = { workspace = true }
 macro_rules_attribute = { workspace = true }
 num-bigint = { workspace = true }
+proptest = { workspace = true }
 rcgen = { workspace = true }
 rustls-test = { workspace = true }
 serde = { workspace = true }
@@ -110,6 +112,16 @@ path = "tests/runners/server_cert_verifier.rs"
 [[test]]
 name = "unbuffered"
 path = "tests/runners/unbuffered.rs"
+
+[[test]]
+name = "property_tests"
+path = "tests/property_tests.rs"
+required-features = ["timing"]
+
+[[test]]
+name = "timing_test"
+path = "tests/timing_test.rs"
+required-features = ["timing"]
 
 [package.metadata.docs.rs]
 # all non-default features except fips (cannot build on docs.rs environment)

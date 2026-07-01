@@ -293,7 +293,7 @@ impl<'a> ClientHello<'a> {
 ///
 /// [`RootCertStore`]: crate::RootCertStore
 /// [`ServerSessionMemoryCache`]: crate::server::handy::ServerSessionMemoryCache
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ServerConfig {
     /// Source of randomness and other crypto.
     pub(super) provider: Arc<CryptoProvider>,
@@ -447,6 +447,42 @@ pub struct ServerConfig {
     ///
     /// [RFC8779]: https://datatracker.ietf.org/doc/rfc8879/
     pub cert_decompressors: Vec<&'static dyn compress::CertDecompressor>,
+
+    /// Optional per-message handshake timing subscriber (feature = "timing").
+    #[cfg(feature = "timing")]
+    pub timing_subscriber: Option<Arc<dyn crate::timing::TimingSubscriber>>,
+}
+
+impl Debug for ServerConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut d = f.debug_struct("ServerConfig");
+        d.field("provider", &self.provider)
+            .field("ignore_client_order", &self.ignore_client_order)
+            .field("max_fragment_size", &self.max_fragment_size)
+            .field("session_storage", &self.session_storage)
+            .field("ticketer", &self.ticketer)
+            .field("cert_resolver", &self.cert_resolver)
+            .field("alpn_protocols", &self.alpn_protocols)
+            .field("versions", &self.versions)
+            .field("verifier", &self.verifier)
+            .field("key_log", &self.key_log)
+            .field("enable_secret_extraction", &self.enable_secret_extraction)
+            .field("max_early_data_size", &self.max_early_data_size)
+            .field("send_half_rtt_data", &self.send_half_rtt_data)
+            .field("send_tls13_tickets", &self.send_tls13_tickets);
+        #[cfg(feature = "tls12")]
+        d.field("require_ems", &self.require_ems);
+        d.field("time_provider", &self.time_provider)
+            .field("cert_compressors", &self.cert_compressors)
+            .field("cert_compression_cache", &self.cert_compression_cache)
+            .field("cert_decompressors", &self.cert_decompressors);
+        #[cfg(feature = "timing")]
+        d.field(
+            "timing_subscriber",
+            &self.timing_subscriber.as_ref().map(|_| ".."),
+        );
+        d.finish()
+    }
 }
 
 impl ServerConfig {
@@ -579,6 +615,15 @@ impl ServerConfig {
         self.time_provider
             .current_time()
             .ok_or(Error::FailedToGetCurrentTime)
+    }
+
+    /// Register (or replace) the timing subscriber. At most one is held.
+    #[cfg(feature = "timing")]
+    pub fn set_timing_subscriber(
+        &mut self,
+        subscriber: Arc<dyn crate::timing::TimingSubscriber>,
+    ) {
+        self.timing_subscriber = Some(subscriber);
     }
 }
 
@@ -1214,6 +1259,13 @@ impl ConnectionCore<ServerConnectionData> {
         common.set_max_fragment_size(config.max_fragment_size)?;
         common.enable_secret_extraction = config.enable_secret_extraction;
         common.fips = config.fips();
+        #[cfg(feature = "timing")]
+        {
+            common.timing = config
+                .timing_subscriber
+                .clone()
+                .map(crate::timing::TimingState::new);
+        }
         Ok(Self::new(
             Box::new(hs::ExpectClientHello::new(config, extra_exts)),
             ServerConnectionData::default(),

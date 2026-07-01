@@ -287,6 +287,14 @@ pub struct ClientConfig {
 
     /// How to offer Encrypted Client Hello (ECH). The default is to not offer ECH.
     pub(super) ech_mode: Option<EchMode>,
+
+    /// Optional per-message handshake timing subscriber (feature = "timing").
+    ///
+    /// When set, the connection will emit [`crate::timing::TimingCheckpoint`]s to the
+    /// subscriber during the TLS handshake. At most one subscriber is held;
+    /// re-registration replaces any prior value.
+    #[cfg(feature = "timing")]
+    pub timing_subscriber: crate::timing::TimingSubscriberSlot,
 }
 
 impl ClientConfig {
@@ -405,6 +413,18 @@ impl ClientConfig {
 
     pub(super) fn needs_key_share(&self) -> bool {
         self.supports_version(ProtocolVersion::TLSv1_3)
+    }
+
+    /// Register (or replace) the timing subscriber. At most one is held.
+    ///
+    /// The subscriber will receive [`crate::timing::TimingCheckpoint`]s during
+    /// subsequent TLS handshakes on connections built from this config.
+    #[cfg(feature = "timing")]
+    pub fn set_timing_subscriber(
+        &mut self,
+        subscriber: Arc<dyn crate::timing::TimingSubscriber>,
+    ) {
+        self.timing_subscriber = crate::timing::TimingSubscriberSlot(Some(subscriber));
     }
 
     /// We support a given TLS version if it's quoted in the configured
@@ -858,6 +878,14 @@ impl ConnectionCore<ClientConnectionData> {
         common_state.protocol = proto;
         common_state.enable_secret_extraction = config.enable_secret_extraction;
         common_state.fips = config.fips();
+        #[cfg(feature = "timing")]
+        {
+            common_state.timing = config
+                .timing_subscriber
+                .0
+                .clone()
+                .map(crate::timing::TimingState::new);
+        }
         let mut data = ClientConnectionData::new();
 
         let mut cx = hs::ClientContext {
