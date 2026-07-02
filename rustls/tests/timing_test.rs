@@ -373,17 +373,22 @@ fn re_registration_only_last_subscriber_receives() {
 fn print_breakdown(label: &str, cps: &[TimingCheckpoint]) {
     println!("\n=== {label} checkpoints ({} total) ===", cps.len());
     println!(
-        "{:<22} {:>14} {:>14}  {:>5}",
-        "NAME", "timestamp_ns", "delta_ns", "role"
+        "{:<22} {:>6} {:>14} {:>14}  {:>5}",
+        "NAME", "DIR", "timestamp_ns", "delta_ns", "role"
     );
     let mut prev: Option<u64> = None;
     for cp in cps {
         let delta = prev
             .map(|p| cp.timestamp_ns.saturating_sub(p))
             .unwrap_or(0);
+        let dir = match cp.direction {
+            rustls::timing::Direction::Read => "READ",
+            rustls::timing::Direction::Write => "WRITE",
+        };
         println!(
-            "{:<22} {:>14} {:>14}  {:>5}",
+            "{:<22} {:>6} {:>14} {:>14}  {:>5}",
             cp.name,
+            dir,
             cp.timestamp_ns,
             delta,
             cp.role.as_u8()

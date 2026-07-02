@@ -231,10 +231,14 @@ impl CommonState {
                 None
             };
 
-        // (2) NEGOTIATE_START before first handshake message
+        // (2) NEGOTIATE_START before first handshake message, then a RECORD_READ
+        //     boundary marking that the inbound message is available for
+        //     processing. Peer-wait lands before RECORD_READ, so the per-message
+        //     delta (message_checkpoint - RECORD_READ) is handler-local cost.
         #[cfg(feature = "timing")]
         if msg_name.is_some() {
             self.timing_negotiate_start();
+            self.timing_record_read();
         }
 
         #[cfg(feature = "timing")]
@@ -828,6 +832,7 @@ impl CommonState {
                     name: "NEGOTIATE_START".into(),
                     role,
                     timestamp_ns: 0,
+                    direction: crate::timing::Direction::Read,
                 };
                 t.subscriber().on_timing_checkpoint(&cp);
             }
@@ -852,6 +857,67 @@ impl CommonState {
                 name: name.into(),
                 role,
                 timestamp_ns: ns,
+                direction: crate::timing::Direction::Read,
+            };
+            t.subscriber().on_timing_checkpoint(&cp);
+        }
+    }
+
+    /// Emit a RECORD_READ checkpoint marking the moment an inbound message is
+    /// available for processing, before its handler runs.
+    ///
+    /// This mirrors s2n-tls' RECORD_READ boundary: the peer-wait that elapsed
+    /// waiting for these bytes lands in the interval *before* this checkpoint,
+    /// so the following per-message checkpoint's delta
+    /// (`message_checkpoint - RECORD_READ`) is handler-local processing cost,
+    /// excluding peer-wait.
+    #[cfg(feature = "timing")]
+    fn timing_record_read(&mut self) {
+        let role = crate::timing::Role::from(self.side);
+        self.timing_negotiate_start();
+        if let Some(t) = self.timing.as_mut() {
+            if t.ended {
+                return;
+            }
+            let ns = t.elapsed_ns_now();
+            let cp = crate::timing::TimingCheckpoint {
+                name: "RECORD_READ".into(),
+                role,
+                timestamp_ns: ns,
+                direction: crate::timing::Direction::Read,
+            };
+            t.subscriber().on_timing_checkpoint(&cp);
+        }
+    }
+
+    /// Emit an outbound (write) handshake-message checkpoint.
+    ///
+    /// Unlike the inbound path, an outbound message can be produced before the
+    /// first inbound message is dispatched (notably the client's ClientHello),
+    /// so this lazily starts the timing epoch if it has not started yet. The
+    /// checkpoint is tagged `Direction::Write`.
+    ///
+    /// NOTE: outbound messages are produced as a batched flight inside a single
+    /// inbound handler, so these deltas are not a clean per-message cost; they
+    /// exist for coverage/diagnostics, not direct per-message comparison.
+    #[cfg(feature = "timing")]
+    pub(crate) fn timing_write_message(&mut self, name: &str) {
+        let role = crate::timing::Role::from(self.side);
+        // If this is the first checkpoint of the handshake (e.g. the client's
+        // ClientHello, produced before any inbound message), emit NEGOTIATE_START
+        // first so it remains the first checkpoint at timestamp 0 and anchors the
+        // epoch. This keeps the START-first / non-decreasing invariants intact.
+        self.timing_negotiate_start();
+        if let Some(t) = self.timing.as_mut() {
+            if t.ended {
+                return;
+            }
+            let ns = t.elapsed_ns_now();
+            let cp = crate::timing::TimingCheckpoint {
+                name: name.into(),
+                role,
+                timestamp_ns: ns,
+                direction: crate::timing::Direction::Write,
             };
             t.subscriber().on_timing_checkpoint(&cp);
         }
@@ -869,6 +935,7 @@ impl CommonState {
                     name: "NEGOTIATE_END".into(),
                     role,
                     timestamp_ns: ns,
+                    direction: crate::timing::Direction::Read,
                 };
                 t.subscriber().on_timing_checkpoint(&cp);
             }

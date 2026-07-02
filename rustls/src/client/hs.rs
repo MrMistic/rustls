@@ -470,6 +470,9 @@ fn emit_client_hello_for_retry(
 
     transcript_buffer.add_message(&ch);
     cx.common.send_msg(ch, false);
+    #[cfg(feature = "timing")]
+    cx.common
+        .timing_write_message("CLIENT_HELLO");
 
     // Calculate the hash of ClientHello and use it to derive EarlyTrafficSecret
     let early_data_key_schedule =

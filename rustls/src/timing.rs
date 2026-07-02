@@ -66,9 +66,28 @@ impl From<Side> for Role {
     }
 }
 
-/// A single timing checkpoint, structurally identical to the s2n-tls record.
+/// Whether a checkpoint was captured when a message was received (read) or
+/// produced (written).
 ///
-/// Exactly three fields, matching s2n-tls (`name`, `role`, `timestamp_ns`).
+/// Inbound (`Read`) checkpoints are captured at the single dispatch point after
+/// a message handler returns. Outbound (`Write`) checkpoints are captured at the
+/// point a message is queued for sending. Anchors (`NEGOTIATE_START` /
+/// `NEGOTIATE_END`) use `Read`.
+///
+/// NOTE (rustls-specific): outbound messages are produced as a batched flight
+/// inside a single inbound handler, so `Write` deltas are not a clean
+/// per-message cost the way `Read` deltas are. `Write` checkpoints exist for
+/// coverage/diagnostics, not for direct per-message comparison with s2n.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Direction {
+    /// Message was received and processed by a handler.
+    Read,
+    /// Message was produced/queued for sending.
+    Write,
+}
+
+/// A single timing checkpoint, structurally identical to the s2n-tls record
+/// (plus a rustls-specific `direction` tag distinguishing read from write).
 #[derive(Clone, Debug)]
 pub struct TimingCheckpoint {
     /// Message or anchor name, UPPER_SNAKE_CASE (e.g. `CLIENT_HELLO`,
@@ -79,6 +98,9 @@ pub struct TimingCheckpoint {
     /// Elapsed nanoseconds since this connection's NEGOTIATE_START epoch.
     /// The NEGOTIATE_START checkpoint itself has `timestamp_ns == 0`.
     pub timestamp_ns: u64,
+    /// Whether this checkpoint was captured on read (inbound) or write
+    /// (outbound). Anchors are tagged `Read`.
+    pub direction: Direction,
 }
 
 /// Consumer-supplied observer that receives each emitted checkpoint.

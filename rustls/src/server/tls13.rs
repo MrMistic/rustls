@@ -352,6 +352,9 @@ mod client_hello {
                     .map(|x| &x.master_secret.0[..]),
                 &self.config,
             )?;
+            #[cfg(feature = "timing")]
+            cx.common
+                .timing_write_message("SERVER_HELLO");
             if !self.done_retry {
                 emit_fake_ccs(cx.common);
             }
@@ -376,6 +379,9 @@ mod client_hello {
                 self.extra_exts,
                 &self.config,
             )?;
+            #[cfg(feature = "timing")]
+            cx.common
+                .timing_write_message("ENCRYPTED_EXTENSIONS");
 
             let doing_client_auth = if full_handshake {
                 let client_auth = emit_certificate_req_tls13(&mut flight, &self.config)?;
@@ -391,12 +397,18 @@ mod client_hello {
                 } else {
                     emit_certificate_tls13(&mut flight, server_key.get_cert(), ocsp_response);
                 }
+                #[cfg(feature = "timing")]
+                cx.common
+                    .timing_write_message("SERVER_CERT");
                 emit_certificate_verify_tls13(
                     &mut flight,
                     cx.common,
                     server_key.get_key(),
                     &sigschemes_ext,
                 )?;
+                #[cfg(feature = "timing")]
+                cx.common
+                    .timing_write_message("SERVER_CERT_VERIFY");
                 client_auth
             } else {
                 false
@@ -429,6 +441,9 @@ mod client_hello {
             cx.common.check_aligned_handshake()?;
             let key_schedule_traffic =
                 emit_finished_tls13(flight, &self.randoms, cx, key_schedule, &self.config);
+            #[cfg(feature = "timing")]
+            cx.common
+                .timing_write_message("SERVER_FINISHED");
 
             if !doing_client_auth && self.config.send_half_rtt_data {
                 // Application data can be sent immediately after Finished, in one
