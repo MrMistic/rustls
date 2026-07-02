@@ -822,7 +822,7 @@ impl CommonState {
 
     /// Emit NEGOTIATE_START exactly once per handshake, capturing the epoch.
     
-    fn timing_negotiate_start(&mut self) {
+    pub fn timing_negotiate_start(&mut self) {
         let role = crate::timing::Role::from(self.side);
         if let Some(t) = self.timing.as_mut() {
             if !t.started {
@@ -903,11 +903,7 @@ impl CommonState {
     
     pub(crate) fn timing_write_message(&mut self, name: &str) {
         let role = crate::timing::Role::from(self.side);
-        // If this is the first checkpoint of the handshake (e.g. the client's
-        // ClientHello, produced before any inbound message), emit NEGOTIATE_START
-        // first so it remains the first checkpoint at timestamp 0 and anchors the
-        // epoch. This keeps the START-first / non-decreasing invariants intact.
-        self.timing_negotiate_start();
+
         if let Some(t) = self.timing.as_mut() {
             if t.ended {
                 return;

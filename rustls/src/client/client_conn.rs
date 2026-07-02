@@ -886,6 +886,11 @@ impl ConnectionCore<ClientConnectionData> {
                 .clone()
                 .map(crate::timing::TimingState::new);
         }
+
+        
+        common_state.timing_negotiate_start();
+        
+        
         let mut data = ClientConnectionData::new();
 
         let mut cx = hs::ClientContext {
