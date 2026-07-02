@@ -1371,7 +1371,7 @@ impl State<ClientConnectionData> for ExpectFinished {
                     auth_context_tls13: auth_context,
                 } => {
                     emit_certificate_tls13(&mut flight, None, auth_context);
-                    #[cfg(feature = "timing")]
+                    
                     cx.common
                         .timing_write_message("CLIENT_CERT");
                 }
@@ -1382,7 +1382,7 @@ impl State<ClientConnectionData> for ExpectFinished {
                     // If ECH was offered, and rejected, we MUST respond with
                     // an empty certificate message.
                     emit_certificate_tls13(&mut flight, None, auth_context);
-                    #[cfg(feature = "timing")]
+                    
                     cx.common
                         .timing_write_message("CLIENT_CERT");
                 }
@@ -1403,11 +1403,11 @@ impl State<ClientConnectionData> for ExpectFinished {
                     } else {
                         emit_certificate_tls13(&mut flight, Some(&certkey), auth_context);
                     }
-                    #[cfg(feature = "timing")]
+                    
                     cx.common
                         .timing_write_message("CLIENT_CERT");
                     emit_certverify_tls13(&mut flight, signer.as_ref())?;
-                    #[cfg(feature = "timing")]
+                    
                     cx.common
                         .timing_write_message("CLIENT_CERT_VERIFY");
                 }
@@ -1424,7 +1424,7 @@ impl State<ClientConnectionData> for ExpectFinished {
             );
 
         emit_finished_tls13(&mut flight, &verify_data);
-        #[cfg(feature = "timing")]
+        
         cx.common
             .timing_write_message("CLIENT_FINISHED");
         flight.finish(cx.common);

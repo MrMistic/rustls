@@ -448,8 +448,8 @@ pub struct ServerConfig {
     /// [RFC8779]: https://datatracker.ietf.org/doc/rfc8879/
     pub cert_decompressors: Vec<&'static dyn compress::CertDecompressor>,
 
-    /// Optional per-message handshake timing subscriber (feature = "timing").
-    #[cfg(feature = "timing")]
+    /// Optional per-message handshake timing subscriber
+    
     pub timing_subscriber: Option<Arc<dyn crate::timing::TimingSubscriber>>,
 }
 
@@ -476,7 +476,7 @@ impl Debug for ServerConfig {
             .field("cert_compressors", &self.cert_compressors)
             .field("cert_compression_cache", &self.cert_compression_cache)
             .field("cert_decompressors", &self.cert_decompressors);
-        #[cfg(feature = "timing")]
+        
         d.field(
             "timing_subscriber",
             &self.timing_subscriber.as_ref().map(|_| ".."),
@@ -618,7 +618,7 @@ impl ServerConfig {
     }
 
     /// Register (or replace) the timing subscriber. At most one is held.
-    #[cfg(feature = "timing")]
+    
     pub fn set_timing_subscriber(
         &mut self,
         subscriber: Arc<dyn crate::timing::TimingSubscriber>,
@@ -1259,7 +1259,7 @@ impl ConnectionCore<ServerConnectionData> {
         common.set_max_fragment_size(config.max_fragment_size)?;
         common.enable_secret_extraction = config.enable_secret_extraction;
         common.fips = config.fips();
-        #[cfg(feature = "timing")]
+        
         {
             common.timing = config
                 .timing_subscriber

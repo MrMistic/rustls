@@ -1,4 +1,3 @@
-#![cfg(feature = "timing")]
 
 //! Property-based tests for the timing instrumentation feature.
 //!

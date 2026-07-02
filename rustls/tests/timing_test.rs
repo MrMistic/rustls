@@ -1,4 +1,3 @@
-#![cfg(feature = "timing")]
 
 //! Integration tests for the timing instrumentation feature.
 //!

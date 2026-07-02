@@ -61,7 +61,7 @@ pub struct CommonState {
     pub(crate) refresh_traffic_keys_pending: bool,
     pub(crate) fips: bool,
     pub(crate) tls13_tickets_received: u32,
-    #[cfg(feature = "timing")]
+    
     pub(crate) timing: Option<crate::timing::TimingState>,
 }
 
@@ -96,7 +96,7 @@ impl CommonState {
             refresh_traffic_keys_pending: false,
             fips: false,
             tls13_tickets_received: 0,
-            #[cfg(feature = "timing")]
+            
             timing: None,
         }
     }
@@ -220,7 +220,7 @@ impl CommonState {
         }
 
         // (1) Before handle: extract message name if handshake
-        #[cfg(feature = "timing")]
+        
         let msg_name: Option<&'static str> =
             if matches!(msg.payload, MessagePayload::Handshake { .. }) {
                 Some(crate::timing::message_name(
@@ -235,13 +235,13 @@ impl CommonState {
         //     boundary marking that the inbound message is available for
         //     processing. Peer-wait lands before RECORD_READ, so the per-message
         //     delta (message_checkpoint - RECORD_READ) is handler-local cost.
-        #[cfg(feature = "timing")]
+        
         if msg_name.is_some() {
             self.timing_negotiate_start();
             self.timing_record_read();
         }
 
-        #[cfg(feature = "timing")]
+        
         let was_handshaking = self.is_handshaking();
 
         let mut cx = Context {
@@ -253,7 +253,7 @@ impl CommonState {
             Ok(next) => {
                 state = next.into_owned();
                 // (3) Per-message checkpoint AFTER successful handler return
-                #[cfg(feature = "timing")]
+                
                 {
                     if let Some(name) = msg_name {
                         self.timing_message(name);
@@ -821,7 +821,7 @@ impl CommonState {
     }
 
     /// Emit NEGOTIATE_START exactly once per handshake, capturing the epoch.
-    #[cfg(feature = "timing")]
+    
     fn timing_negotiate_start(&mut self) {
         let role = crate::timing::Role::from(self.side);
         if let Some(t) = self.timing.as_mut() {
@@ -840,7 +840,7 @@ impl CommonState {
     }
 
     /// Emit a handshake-message checkpoint with a freshly-read timestamp.
-    #[cfg(feature = "timing")]
+    
     fn timing_message(&mut self, name: &str) {
         let role = crate::timing::Role::from(self.side);
         if let Some(t) = self.timing.as_mut() {
@@ -871,7 +871,7 @@ impl CommonState {
     /// so the following per-message checkpoint's delta
     /// (`message_checkpoint - RECORD_READ`) is handler-local processing cost,
     /// excluding peer-wait.
-    #[cfg(feature = "timing")]
+    
     fn timing_record_read(&mut self) {
         let role = crate::timing::Role::from(self.side);
         self.timing_negotiate_start();
@@ -900,7 +900,7 @@ impl CommonState {
     /// NOTE: outbound messages are produced as a batched flight inside a single
     /// inbound handler, so these deltas are not a clean per-message cost; they
     /// exist for coverage/diagnostics, not direct per-message comparison.
-    #[cfg(feature = "timing")]
+    
     pub(crate) fn timing_write_message(&mut self, name: &str) {
         let role = crate::timing::Role::from(self.side);
         // If this is the first checkpoint of the handshake (e.g. the client's
@@ -924,7 +924,7 @@ impl CommonState {
     }
 
     /// Emit NEGOTIATE_END exactly once, only on a transition into the completed state.
-    #[cfg(feature = "timing")]
+    
     fn timing_negotiate_end(&mut self) {
         let role = crate::timing::Role::from(self.side);
         if let Some(t) = self.timing.as_mut() {

@@ -1,4 +1,4 @@
-//! Per-message handshake timing instrumentation (feature = "timing").
+//! Per-message handshake timing instrumentation
 //!
 //! Mirrors the s2n-tls checkpoint design (aws/s2n-tls#5903) so handshake
 //! timings are directly comparable across implementations.

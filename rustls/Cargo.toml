@@ -116,12 +116,10 @@ path = "tests/runners/unbuffered.rs"
 [[test]]
 name = "property_tests"
 path = "tests/property_tests.rs"
-required-features = ["timing"]
 
 [[test]]
 name = "timing_test"
 path = "tests/timing_test.rs"
-required-features = ["timing"]
 
 [package.metadata.docs.rs]
 # all non-default features except fips (cannot build on docs.rs environment)
